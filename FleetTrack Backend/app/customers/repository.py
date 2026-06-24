@@ -12,7 +12,8 @@ def get_all_customers(db:Session):
 def get_customer_by_id(db:Session, customerId:int):
     return(
         db.query(TblAccountLedger)
-        .filter(TblAccountLedger.ledgerId == customerId)
+        .filter(TblAccountLedger.ledgerId == customerId,
+                TblAccountLedger.accountGroupId == 26)
         .first()
     )
 

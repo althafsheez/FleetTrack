@@ -131,7 +131,7 @@ class CustomerResponse(BaseModel):
 
     narration: Optional[str] = None
 
-    Nationality: Optional[str] 
+    Nationality: Optional[str] = None
 
     CustomerIdNo: Optional[str] = None
     CustomerIdExpiry: Optional[datetime] = None

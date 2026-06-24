@@ -51,7 +51,7 @@ class SupplierCreate(BaseModel):
 
     isCorporate: Optional[bool] = None
 
-class CustomerUpdate(BaseModel):
+class SupplierUpdate(BaseModel):
     ledgerName: str = Field(
     min_length=1,
     max_length=200
@@ -98,7 +98,7 @@ class CustomerUpdate(BaseModel):
     isCorporate: Optional[bool] = None
 
 
-class CustomerResponse(BaseModel):
+class SupplierResponse(BaseModel):
     ledgerId: Optional[int] = None
     ledgerName: Optional[str] = None
 

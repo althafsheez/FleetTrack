@@ -30,26 +30,16 @@ class SupplierCreate(BaseModel):
 
     address: Optional[str] = None
 
-    creditPeriod: Optional[int] = None
-    creditLimit: Optional[Decimal] = None
-
     billByBill: Optional[bool] = None
 
     tin: Optional[str] = None
 
     narration: Optional[str] = None
 
-    Nationality: Optional[str] = Field(default=None, max_length=3)
-
-
-    CustomerIdNo: Optional[str] = None
-    CustomerIdExpiry: Optional[datetime] = None
-
     routeId: Optional[int] = None
 
     areaId: Optional[int] = None
 
-    isCorporate: Optional[bool] = None
 
 class SupplierUpdate(BaseModel):
     ledgerName: str = Field(
@@ -77,8 +67,6 @@ class SupplierUpdate(BaseModel):
 
     address: Optional[str] = None
 
-    creditPeriod: Optional[int] = None
-    creditLimit: Optional[Decimal] = None
 
     billByBill: Optional[bool] = None
 
@@ -86,16 +74,11 @@ class SupplierUpdate(BaseModel):
 
     narration: Optional[str] = None
 
-    Nationality: Optional[str] = Field(default=None, max_length=3)
-
-    CustomerIdNo: Optional[str] = None
-    CustomerIdExpiry: Optional[datetime] = None
-
     routeId: Optional[int] = None
 
     areaId: Optional[int] = None
 
-    isCorporate: Optional[bool] = None
+
 
 
 class SupplierResponse(BaseModel):
@@ -122,22 +105,13 @@ class SupplierResponse(BaseModel):
 
     address: Optional[str] = None
 
-    creditPeriod: Optional[int] = None
-    creditLimit: Optional[Decimal] = None
-
     billByBill: Optional[bool] = None
 
     tin: Optional[str] = None
 
     narration: Optional[str] = None
 
-    Nationality: Optional[str] 
-
-    CustomerIdNo: Optional[str] = None
-    CustomerIdExpiry: Optional[datetime] = None
-
     routeId: Optional[int] = None
 
     areaId: Optional[int] = None
 
-    isCorporate: Optional[bool] = None

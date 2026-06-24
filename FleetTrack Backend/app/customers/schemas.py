@@ -47,7 +47,7 @@ class CustomerCreate(BaseModel):
 
     routeId: Optional[int] = None
 
-    
+    areaId: Optional[int] = None
 
     isCorporate: Optional[bool] = None
 
@@ -93,7 +93,7 @@ class CustomerUpdate(BaseModel):
 
     routeId: Optional[int] = None
 
-    
+    areaId: Optional[int] = None
 
     isCorporate: Optional[bool] = None
 
@@ -138,5 +138,6 @@ class CustomerResponse(BaseModel):
 
     routeId: Optional[int] = None
 
+    areaId: Optional[int] = None
 
     isCorporate: Optional[bool] = None

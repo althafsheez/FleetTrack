@@ -17,9 +17,12 @@ def get_customer_by_id(db:Session, customerId:int):
         .first()
     )
 
-def create_customer(db:Session, customer:CustomerCreate):
+def create_customer(db: Session, customer: CustomerCreate):
+    customer_data = customer.model_dump()
+    customer_data["ledgerName"] = customer_data["ledgerName"].upper()
+
     db_customer = TblAccountLedger(
-        **customer.model_dump(),
+        **customer_data,
         accountGroupId=26,
     )
 
@@ -33,8 +36,11 @@ def update_customer(db:Session, customerId:int, customer:CustomerUpdate):
     db_customer = get_customer_by_id(db, customerId)
     if not db_customer:
         return None
+    
+    customer_data = customer.model_dump()
+    customer_data["ledgerName"] = customer_data["ledgerName"].upper()
 
-    for key, value in customer.model_dump().items():
+    for key, value in customer_data.items():
         setattr(db_customer, key, value)
 
     db.commit()

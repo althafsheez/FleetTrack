@@ -18,8 +18,10 @@ def get_supplier_by_id(db:Session, supplierId:int):
     )
 
 def create_supplier(db:Session, supplier:SupplierCreate):
+    supplier_data = supplier.model_dump()
+    supplier_data["ledgerName"] = supplier_data["ledgerName"].upper()
     db_supplier = TblAccountLedger(
-        **supplier.model_dump(),
+        **supplier_data,
         accountGroupId=22,
     )
 
@@ -28,13 +30,17 @@ def create_supplier(db:Session, supplier:SupplierCreate):
     db.refresh(db_supplier)
 
     return db_supplier
-
-def update_supplier(db:Session, supplierId:int, supplier:SupplierUpdate):
+def update_supplier(db: Session, supplierId: int, supplier: SupplierUpdate):
     db_supplier = get_supplier_by_id(db, supplierId)
+
     if not db_supplier:
         return None
 
-    for key, value in supplier.model_dump().items():
+    supplier_data = supplier.model_dump()
+
+    supplier_data["ledgerName"] = supplier_data["ledgerName"].upper()
+
+    for key, value in supplier_data.items():
         setattr(db_supplier, key, value)
 
     db.commit()

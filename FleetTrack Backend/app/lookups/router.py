@@ -33,20 +33,6 @@ def get_models(make_id:int, db:Session = Depends(get_db)):
 def get_engine_capacities(model_id:int, db:Session = Depends(get_db)):
     return get_engine_capacities_service(db,model_id)
 
-@router.get("/makes")
-def get_makes(db: Session = Depends(get_db)):
-    return get_makes_service(db)
-
-
-@router.get("/models")
-def get_models(makeId: int, db: Session = Depends(get_db)):
-    return get_models_service(db, makeId)
-
-
-@router.get("/engine-capacities")
-def get_engine_capacities(modelId: int, db: Session = Depends(get_db)):
-    return get_engine_capacities_service(db, modelId)
-
 
 @router.get("/vehicle-types")
 def get_vehicle_types(db: Session = Depends(get_db)):

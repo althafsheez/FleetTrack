@@ -56,3 +56,4 @@ def delete_customer(customerId:int, db:Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Customer not found")
     return {"message": "Customer deleted successfully"}
 
+

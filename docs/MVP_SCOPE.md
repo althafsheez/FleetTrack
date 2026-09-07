@@ -12,6 +12,7 @@ This is the user's target scope, not an implementation-complete checklist. The b
 | Billing/collection | Invoice, Receipt. |
 | Registers | Sales Invoice Register, Receipt Register. |
 | UI target | Next.js, TypeScript, Tailwind CSS, shadcn/ui screens supporting the approved flow, guided by reference captures. |
+| Access | Login/logout and protected application access using existing active `VT_ApplicationUsers`; role-specific permissions are deferred. |
 
 ## OUT OF MVP
 
@@ -19,6 +20,6 @@ Full ERP rebuild; database redesign/migrations; generated-model rewrite; broad d
 
 ## UNKNOWN / NEEDS CONFIRMATION
 
-Exact screen fields and required CRUD actions; tariff rule coverage; rental/lease variants; extensions/replacements/cancellations; login/roles and multi-company/branch permissions; fine/Salik manual entry versus automated import; late-charge handling; invoice printing/export; receipt allocation, deposits, partial payments and refunds; mandatory legacy accounting side effects; demo dataset, delivery date, and hosting.
+Exact screen fields and required CRUD actions; tariff rule coverage; rental/lease variants; extensions/replacements/cancellations; roles and multi-company/branch permissions; fine/Salik manual entry versus automated import; late-charge handling; invoice printing/export; receipt allocation, deposits, partial payments and refunds; mandatory legacy accounting side effects; demo dataset, delivery date, and hosting.
 
 Resolve only what the approved demo requires. Accounting writes required for valid invoices/receipts are not excluded simply because the full finance module is out of scope. Do not expand scope or guess those dependencies.

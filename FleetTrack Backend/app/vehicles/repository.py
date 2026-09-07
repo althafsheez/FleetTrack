@@ -1,43 +1,33 @@
-from sqlacademy import Session
-from .schemas import VehicleCreate, VehicleUpdate 
-from app.generated_models.models import VT_Veh_VehicleMaster
+from sqlalchemy import select, or_
+from app.generated_models.models import VTVehVehicleMaster
 
-def get_all_vehicles(db: Session):
-    return db.query(VT_Veh_VehicleMaster).all()
+TABLE = VTVehVehicleMaster.__table__
 
-def get_vehicle_by_id(db:Session , vehicleId:int):
-    return db.query(VT_Veh_VehicleMaster).filter(VT_Veh_VehicleMaster.VehicleId == vehicleId).first()
 
-def create_vehicle(db: Session, vehicle: VehicleCreate):
-    vehicle_data=vehicle.model_dump()
-    db_vehicle=VT_Veh_VehicleMaster(**vehicle_data)
-    db.add(db_vehicle)
-    db.commit()
-    db.refresh(db_vehicle)
-    return db_vehicle
+def list_vehicles(db, q=None, plate_no=None, fleet_no=None, offset=0, limit=100):
+    query = select(TABLE)
+    if q:
+        query = query.where(or_(*(TABLE.c[name].icontains(q, autoescape=True)
+                                 for name in ("PlateNo", "VHType", "ChasisNo", "EngineNo"))))
+    if plate_no:
+        query = query.where(TABLE.c.PlateNo.icontains(plate_no, autoescape=True))
+    if fleet_no:
+        query = query.where(TABLE.c.VHType.icontains(fleet_no, autoescape=True))
+    return db.execute(query.order_by(TABLE.c.VehicleId).offset(offset).limit(limit)).mappings().all()
 
-def update_vehicle(db: Session, vehicleId: int, vehicle: VehicleUpdate):
-    db_vehicle = get_vehicle_by_id(db, vehicleId)
-    if not db_vehicle:
-        return None
 
-    vehicle_data = vehicle.model_dump()
-    for key, value in vehicle_data.items():
-        setattr(db_vehicle, key, value)
+def get_vehicle(db, vehicle_id):
+    return db.execute(select(TABLE).where(TABLE.c.VehicleId == vehicle_id)).mappings().first()
 
-    db.commit()
-    db.refresh(db_vehicle)
 
-    return db_vehicle
+def create_vehicle(db, values):
+    result = db.execute(TABLE.insert().values(**values))
+    return result.inserted_primary_key[0]
 
-def delete_vehicle(db: Session, vehicleId: int):
-    db_vehicle = get_vehicle_by_id(db, vehicleId)
-    if not db_vehicle:
-        return None
 
-    db.delete(db_vehicle)
-    db.commit()
+def update_vehicle(db, vehicle_id, values):
+    db.execute(TABLE.update().where(TABLE.c.VehicleId == vehicle_id).values(**values))
 
-    return True
 
-def search_vehicle(db:Session , )
+def delete_vehicle(db, vehicle_id):
+    db.execute(TABLE.delete().where(TABLE.c.VehicleId == vehicle_id))

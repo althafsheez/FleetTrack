@@ -1,4 +1,16 @@
-# Implemented Vehicle, Tariff and Contract APIs
+# Implemented FleetTrack APIs
+
+## Portal authentication — 2026-09-07
+
+Authentication uses existing `VT_ApplicationUsers` records, not the separate Balance Sheet ERP `tbl_User` records. Roles are out of scope; all active authenticated portal users currently have equal access.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| POST | `/auth/login` | Accepts `{username, password}`, verifies an active portal user and sets the signed `fleettrack_session` HTTP-only cookie. Returns `{user: {userId, userName, displayName}}`. |
+| GET | `/auth/me` | Returns `{userId, userName, displayName}` for the current session; 401 when missing, invalid or expired. |
+| POST | `/auth/logout` | Clears the browser session cookie and returns 204. |
+
+All customer, supplier, lookup, vehicle, tariff and contract endpoints require the session cookie. Frontend cross-origin requests must use credentials. Local development must configure `AUTH_SECRET` with at least 32 characters; `AUTH_SESSION_TTL_SECONDS` defaults to eight hours and `AUTH_COOKIE_SECURE` must be true behind production HTTPS. The backend recognizes the portal's existing 47-character hyphenated MD5 digest representation strictly for legacy login compatibility. It never returns password fields. Registration, password changes/resets, roles, permission checks and server-side session revocation are not implemented.
 
 ## Contract agreement create and view — 2026-09-07
 

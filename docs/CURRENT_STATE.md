@@ -1,5 +1,13 @@
 # Current state audit
 
+## Latest implementation — portal authentication
+
+FleetTrack now has backend authentication against existing `VT_ApplicationUsers` portal accounts. Read-only MSSQL inspection confirmed status `1` is Active, status `2` is Inactive, and all 13 stored password values use a 47-character hyphenated 16-byte digest representation. The compatibility verifier recognizes that legacy MD5 representation without returning or logging stored values. This is legacy compatibility, not a recommendation for new password storage.
+
+`POST /auth/login` validates an active portal user and sets a signed, HTTP-only session cookie; `GET /auth/me` returns the safe current-user projection; `POST /auth/logout` clears the cookie. Customer, supplier, lookup, vehicle, tariff and contract routers now require the cookie. Roles and permissions are not implemented; every authenticated active portal user has the same MVP access. `AUTH_SECRET` must be supplied with at least 32 characters, with session lifetime and secure-cookie behavior configurable through environment variables.
+
+Verification: five isolated authentication tests pass for active/inactive/invalid credentials, strict legacy digest handling, signed-session round trip, expiry, tampering, login cookie/current-user recovery and logout clearing. The five isolated contract regression tests still pass. Python compile and OpenAPI checks pass, and OpenAPI shows the three auth paths plus the cookie dependency on business APIs. Live MSSQL aggregate reads confirmed the status labels and password representation without exposing credentials. A successful live login remains UNKNOWN until an approved user supplies their password through the login endpoint.
+
 ## Latest implementation — Contract view list/search
 
 View Contracts now has a backend-only `GET /contracts/view` endpoint for the reference grid. It reads `VT_ContractMaster`, `VT_ContractVehicleMaster`, and `VT_Veh_VehicleMaster`, supports optional `customerName`, `agreementNo`, and `vehicle` filters, and returns one frontend-ready row per matched contract vehicle assignment with agreement number, customer, date out/in, total days, rate, vehicle, rent, Salik, fine, received, and pending amount.

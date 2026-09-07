@@ -1,6 +1,12 @@
 import os
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from app.auth.dependencies import get_current_user
+from app.auth.router import router as auth_router
 from app.vehicles.router import router as vehicles_router
 from app.tariffs.router import router as tariffs_router
 from app.contracts.router import router as contracts_router
@@ -19,6 +25,7 @@ app.add_middleware(
     ).split(",") if origin.strip()],
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
+    allow_credentials=True,
 )
 
 
@@ -26,10 +33,13 @@ app.add_middleware(
 def read_root():
     return {"message": "Backend is running!"}
 
-app.include_router(customers_router)
-app.include_router(suppliers_router)
-app.include_router(lookups_router)
+app.include_router(auth_router)
 
-app.include_router(vehicles_router)
-app.include_router(tariffs_router)
-app.include_router(contracts_router)
+authenticated = [Depends(get_current_user)]
+app.include_router(customers_router, dependencies=authenticated)
+app.include_router(suppliers_router, dependencies=authenticated)
+app.include_router(lookups_router, dependencies=authenticated)
+
+app.include_router(vehicles_router, dependencies=authenticated)
+app.include_router(tariffs_router, dependencies=authenticated)
+app.include_router(contracts_router, dependencies=authenticated)

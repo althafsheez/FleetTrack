@@ -4,7 +4,9 @@ from .repository import ( get_states , get_plate_categories ,
                            , get_engine_capacities , get_makes , get_models , get_engine_capacities , get_veh_types
                            , get_fuel_types , get_fuel_capacity_units , get_transmission_types , get_colours , get_insurance_policies
                            , get_insurance_companies , get_TC_nos , get_tariff_groups , get_company_branches , get_locations , get_statuses
-                             )
+                             , get_contract_types, get_customers_lookup, get_application_users, get_sales_persons, get_payment_modes
+                             , get_discount_types, get_billing_types, get_visa_types, get_license_types, get_nationalities
+                             , get_fuel_levels, get_customer_types, get_confirmation_ref_types, get_contract_statuses, get_customer_users )
 
 def get_states_service(db:Session):
     return get_states(db)
@@ -61,3 +63,52 @@ def get_locations_service(db:Session):
 
 def get_statuses_service(db:Session):
     return get_statuses(db)
+
+def get_insurance_types_service(db: Session):
+    from .repository import get_insurance_types
+    return get_insurance_types(db)
+
+def get_contract_types_service(db: Session):
+    return get_contract_types(db)
+
+def get_customers_lookup_service(db: Session, q: str | None = None):
+    return get_customers_lookup(db, q)
+
+def get_application_users_service(db: Session):
+    return get_application_users(db)
+
+def get_customer_users_service(db: Session, customer_id: int, q: str | None = None):
+    return get_customer_users(db, customer_id, q)
+
+def get_sales_persons_service(db: Session):
+    return get_sales_persons(db)
+
+def get_payment_modes_service(db: Session):
+    return get_payment_modes(db)
+
+def get_discount_types_service(db: Session):
+    return get_discount_types(db)
+
+def get_billing_types_service(db: Session):
+    return get_billing_types(db)
+
+def get_visa_types_service(db: Session):
+    return get_visa_types(db)
+
+def get_license_types_service(db: Session):
+    return get_license_types(db)
+
+def get_nationalities_service(db: Session):
+    return get_nationalities(db)
+
+def get_fuel_levels_service(db: Session):
+    return get_fuel_levels(db)
+
+def get_customer_types_service(db: Session):
+    return get_customer_types(db)
+
+def get_confirmation_ref_types_service(db: Session):
+    return get_confirmation_ref_types(db)
+
+def get_contract_statuses_service(db: Session):
+    return get_contract_statuses(db)

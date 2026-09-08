@@ -1,10 +1,10 @@
-from sqlalchemy import select, or_
+from sqlalchemy import func, select, or_
 from app.generated_models.models import VTVehVehicleMaster
 
 TABLE = VTVehVehicleMaster.__table__
 
 
-def list_vehicles(db, q=None, plate_no=None, fleet_no=None, offset=0, limit=100):
+def vehicle_query(q=None, plate_no=None, fleet_no=None):
     query = select(TABLE)
     if q:
         query = query.where(or_(*(TABLE.c[name].icontains(q, autoescape=True)
@@ -13,7 +13,19 @@ def list_vehicles(db, q=None, plate_no=None, fleet_no=None, offset=0, limit=100)
         query = query.where(TABLE.c.PlateNo.icontains(plate_no, autoescape=True))
     if fleet_no:
         query = query.where(TABLE.c.VHType.icontains(fleet_no, autoescape=True))
+    return query
+
+
+def list_vehicles(db, q=None, plate_no=None, fleet_no=None, offset=0, limit=100):
+    query = vehicle_query(q=q, plate_no=plate_no, fleet_no=fleet_no)
     return db.execute(query.order_by(TABLE.c.VehicleId).offset(offset).limit(limit)).mappings().all()
+
+
+def get_vehicles_page(db, q=None, plate_no=None, fleet_no=None, offset=0, limit=10):
+    query = vehicle_query(q=q, plate_no=plate_no, fleet_no=fleet_no)
+    total = db.execute(select(func.count()).select_from(query.subquery())).scalar_one()
+    items = db.execute(query.order_by(TABLE.c.VehicleId).offset(offset).limit(limit)).mappings().all()
+    return items, total
 
 
 def get_vehicle(db, vehicle_id):

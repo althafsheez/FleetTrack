@@ -196,6 +196,7 @@ class ContractVehicleResponse(BaseModel):
 class ContractViewRow(BaseModel):
     slNo: int
     contractId: int
+    assignmentId: int | None = None
     agreementNo: str
     customer: str
     dateOut: datetime | None = None
@@ -209,6 +210,13 @@ class ContractViewRow(BaseModel):
     fine: Decimal
     received: Decimal
     pendingAmount: Decimal
+
+
+class PaginatedContractView(BaseModel):
+    items: list[ContractViewRow]
+    total: int = Field(ge=0)
+    offset: int = Field(ge=0)
+    limit: int = Field(ge=1)
 
 
 class ContractResponse(BaseModel):
@@ -295,3 +303,108 @@ class ContractResponse(BaseModel):
     CustomerIdExpiry: datetime | None = None
     driver: ContractDriverResponse
     vehicle_assignment: ContractVehicleResponse
+
+
+class ContractDetailResponse(BaseModel):
+    """A read-only composition of the legacy contract header and its snapshots."""
+
+    contract: dict
+    driver: dict | None = None
+    vehicleAssignment: dict | None = None
+
+
+class ContractPrintData(BaseModel):
+    """The deliberately small set of values populated on the approved paper template."""
+
+    contractId: int
+    assignmentId: int
+    agreementNo: str
+    passportNo: str | None = None
+    hirerName: str | None = None
+    nationality: str | None = None
+    passportExpiryDate: datetime | None = None
+    dateOfBirth: datetime | None = None
+    drivingLicenseNo: str | None = None
+    phone: str | None = None
+    dlPlaceOfIssue: str | None = None
+    dlIssueDate: datetime | None = None
+    dlExpiryDate: datetime | None = None
+    vehicleMake: str | None = None
+    vehicleModel: str | None = None
+    plateNumber: str | None = None
+    colour: str | None = None
+    dailyPrice: Decimal | None = None
+    weeklyPrice: Decimal | None = None
+    monthlyPrice: Decimal | None = None
+    allowedKm: Decimal | None = None
+    otherCharges: Decimal | None = None
+    checkoutDate: datetime | None = None
+
+
+class ContractUpdate(BaseModel):
+    """The MVP-safe fields that may be amended without moving customer or vehicle ownership."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ContractType: int | None = Field(None, gt=0)
+    ContractStartDate: datetime | None = None
+    ContractExpectedEndDate: datetime | None = None
+    ContractLocId: int | None = Field(None, gt=0)
+    UserName: str | None = Field(None, min_length=1, max_length=100)
+    Address: str | None = None
+    Phone: str | None = Field(None, max_length=50)
+    Mobile: str | None = Field(None, max_length=50)
+    Fax: str | None = Field(None, max_length=50)
+    Email: str | None = Field(None, max_length=50)
+    DateOfBirth: datetime | None = None
+    Nationality: str | None = Field(None, min_length=3, max_length=3)
+    VisaType: int | None = Field(None, gt=0)
+    VisaExpiryDate: datetime | None = None
+    DrivingLicenseType: int | None = Field(None, gt=0)
+    DrivingLicenseNo: str | None = Field(None, min_length=1, max_length=100)
+    DLPlaceOfIssue: str | None = Field(None, min_length=1, max_length=100)
+    DLIssueDate: datetime | None = None
+    DLExpiryDate: datetime | None = None
+    Rate: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    DriverCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    AddDriverCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    CDW: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    PAI: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    ExcessKmCharge: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    FuelCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    SalikCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    ExcessInsCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    TrafficCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    MileageCap: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    OtherCharges: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    DiscountType: int | None = Field(None, gt=0)
+    Discount: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    Advance: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    Subtotal: Decimal | None = Field(None, max_digits=18, decimal_places=2)
+    PaymentMode: int | None = Field(None, gt=0)
+    SalesPersonId: int | None = Field(None, gt=0)
+    Remarks: str | None = None
+    ConfirmationRefValue: str | None = Field(None, max_length=50)
+    IsAdvanceInvoice: bool | None = None
+    BillingType: int | None = Field(None, gt=0)
+    DatetimeOut: datetime | None = None
+    KmOut: int | None = Field(None, ge=0)
+    FuelLevelIdOut: int | None = Field(None, gt=0)
+    CheckedOutBy: int | None = Field(None, gt=0)
+    LocationOut: int | None = Field(None, gt=0)
+    UpdatedBy: int = Field(..., gt=0)
+
+    @field_validator("UserName", "DrivingLicenseNo", "DLPlaceOfIssue")
+    @classmethod
+    def strip_optional_text(cls, value):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("field cannot be blank")
+        return value
+
+    @field_validator("Nationality")
+    @classmethod
+    def normalize_optional_nationality(cls, value):
+        return value.strip().upper() if value is not None else value

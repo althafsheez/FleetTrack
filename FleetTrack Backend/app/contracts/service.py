@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from app.generated_models.models import Base
 from app.master_data import database_errors, require_reference
 from . import repository as repo
+from .pdf import render_contract_pdf
 
 LEGACY_DATE = datetime(1900, 1, 1)
 CONTRACT_STATUS_OPEN = 8
@@ -270,6 +271,7 @@ def list_contract_view(db, customer_name=None, agreement_no=None, vehicle=None, 
                 {
                     "slNo": index,
                     "contractId": row["ContractId"],
+                    "assignmentId": row["AssignmentId"],
                     "agreementNo": row["ContractRefNo"] or row["RTACode"],
                     "customer": row["CustomerName"],
                     "dateOut": date_out,
@@ -286,6 +288,20 @@ def list_contract_view(db, customer_name=None, agreement_no=None, vehicle=None, 
                 }
             )
         return view
+
+
+def list_contract_view_page(db, customer_name=None, agreement_no=None, vehicle=None, offset=0, limit=10):
+    rows = list_contract_view(
+        db,
+        customer_name=customer_name,
+        agreement_no=agreement_no,
+        vehicle=vehicle,
+        offset=offset,
+        limit=limit,
+    )
+    with database_errors(db):
+        total = repo.count_contract_view(db, customer_name, agreement_no, vehicle)
+    return {"items": rows, "total": total, "offset": offset, "limit": limit}
 
 
 def _validate_driver_references(db, values):
@@ -334,3 +350,145 @@ def delete_driver(db, driver_id):
         get_driver_detail(db, driver_id)
         repo.delete_driver(db, driver_id)
         db.commit()
+
+
+def get_contract_detail(db, contract_id):
+    """Return one agreement with its original driver and handover snapshots."""
+    with database_errors(db):
+        contract = repo.get_contract(db, contract_id)
+        if contract is None:
+            raise HTTPException(404, "Contract not found")
+        driver = repo.get_driver(db, contract_id)
+        vehicle_assignment = repo.get_vehicle_assignment(db, contract_id)
+        return {
+            "contract": dict(contract),
+            "driver": dict(driver) if driver else None,
+            "vehicleAssignment": dict(vehicle_assignment) if vehicle_assignment else None,
+        }
+
+
+def _joined_plate(vehicle):
+    plate_code = _text(vehicle["PlateCode"] or vehicle["PlateCodeName"]).strip()
+    plate_number = _text(vehicle["PlateNo"]).strip()
+    return " ".join(value for value in (plate_code, plate_number) if value)
+
+
+def get_contract_print_data(db, contract_id, assignment_id):
+    """Compose the approved print packet without manufacturing unrecorded values."""
+    with database_errors(db):
+        contract = repo.get_contract(db, contract_id)
+        if contract is None:
+            raise HTTPException(404, "Contract not found")
+        assignment = repo.get_vehicle_assignment_by_id(db, contract_id, assignment_id)
+        if assignment is None:
+            raise HTTPException(404, "Contract vehicle assignment not found")
+        driver = repo.get_driver(db, contract_id)
+        vehicle = repo.get_contract_print_vehicle(db, assignment["VehicleId"])
+        if vehicle is None:
+            raise HTTPException(404, "Assigned vehicle not found")
+
+        hirer = driver or contract
+        contract_type_name = _text(repo.get_contract_type_name(db, contract["ContractType"])).lower()
+        rate = _money(contract["Rate"])
+        prices = {"dailyPrice": None, "weeklyPrice": None, "monthlyPrice": None}
+        if "month" in contract_type_name:
+            prices["monthlyPrice"] = rate
+        elif "week" in contract_type_name:
+            prices["weeklyPrice"] = rate
+        else:
+            prices["dailyPrice"] = rate
+
+        return {
+            "contractId": contract["ContractId"],
+            "assignmentId": assignment["Id"],
+            "agreementNo": contract["ContractRefNo"] or contract["RTACode"],
+            "passportNo": hirer["PassportNo"],
+            "hirerName": hirer["UserName"],
+            "nationality": repo.get_nationality_name(db, hirer.get("NationalityId", contract["Nationality"])),
+            "passportExpiryDate": hirer["PassportExpiryDate"],
+            "dateOfBirth": hirer["DateOfBirth"],
+            "drivingLicenseNo": hirer["DrivingLicenseNo"],
+            "phone": hirer["Phone"],
+            "dlPlaceOfIssue": hirer["DLPlaceOfIssue"],
+            "dlIssueDate": hirer["DLIssueDate"],
+            "dlExpiryDate": hirer["DLExpiryDate"],
+            "vehicleMake": vehicle["MakeName"],
+            "vehicleModel": vehicle["ModelName"],
+            "plateNumber": _joined_plate(vehicle),
+            "colour": vehicle["ColourName"],
+            **prices,
+            "allowedKm": vehicle["AllowedKmsPerDay"],
+            "otherCharges": _money(contract["OtherCharges"]),
+            "checkoutDate": assignment["DatetimeOut"],
+        }
+
+
+def get_contract_print_pdf(db, contract_id, assignment_id):
+    """Generate the approved paper agreement from the validated print projection."""
+    data = get_contract_print_data(db, contract_id, assignment_id)
+    return render_contract_pdf(data), _text(data["agreementNo"]) or str(contract_id)
+
+
+def _validate_contract_update_references(db, values):
+    for field, (table, key) in REFERENCES.items():
+        if field in values and values[field] is not None:
+            require_reference(db, table, key, values[field], field)
+    if "UpdatedBy" in values:
+        require_reference(db, "VT_ApplicationUsers", "UserID", values["UpdatedBy"], "UpdatedBy")
+
+
+def update_contract(db, contract_id, payload):
+    """Update only fields already captured by this MVP; customer and vehicle stay fixed."""
+    values = payload.model_dump(exclude_unset=True)
+    with database_errors(db):
+        contract = repo.get_contract(db, contract_id)
+        if contract is None:
+            raise HTTPException(404, "Contract not found")
+        _validate_contract_update_references(db, values)
+
+        start_date = values.get("ContractStartDate", contract["ContractStartDate"])
+        end_date = values.get("ContractExpectedEndDate", contract["ContractExpectedEndDate"])
+        if end_date < start_date:
+            raise HTTPException(422, "ContractExpectedEndDate cannot be before ContractStartDate")
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        header_fields = set(CONTRACT_TABLE_FIELDS)
+        header_values = {key: value for key, value in values.items() if key in header_fields}
+        header_values["UpdatedBy"] = values["UpdatedBy"]
+        header_values["UpdatedDate"] = now
+        if "ContractType" in header_values:
+            header_values["PaymentType"] = header_values["ContractType"]
+        repo.update_contract(db, contract_id, header_values)
+
+        driver = repo.get_driver(db, contract_id)
+        driver_mapping = {
+            "UserName": "UserName", "Address": "Address", "Phone": "Phone", "Mobile": "Mobile",
+            "Fax": "Fax", "Email": "Email", "DateOfBirth": "DateOfBirth", "Nationality": "NationalityId",
+            "VisaType": "VisaType", "VisaExpiryDate": "VisaExpiryDate", "DrivingLicenseType": "DrivingLicenseType",
+            "DrivingLicenseNo": "DrivingLicenseNo", "DLPlaceOfIssue": "DLPlaceOfIssue", "DLIssueDate": "DLIssueDate",
+            "DLExpiryDate": "DLExpiryDate",
+        }
+        driver_values = {target: values[source] for source, target in driver_mapping.items() if source in values}
+        if driver_values and driver is not None:
+            _validate_driver_references(db, driver_values)
+            repo.update_driver(db, driver["ContractDriverId"], driver_values)
+
+        assignment = repo.get_vehicle_assignment(db, contract_id)
+        assignment_fields = {"DatetimeOut", "KmOut", "FuelLevelIdOut", "CheckedOutBy", "LocationOut"}
+        assignment_values = {key: value for key, value in values.items() if key in assignment_fields}
+        if assignment_values and assignment is not None:
+            repo.update_vehicle_assignment(db, assignment["Id"], assignment_values)
+
+        db.commit()
+        return get_contract_detail(db, contract_id)
+
+
+CONTRACT_TABLE_FIELDS = {
+    "ContractType", "ContractStartDate", "ContractExpectedEndDate", "ContractLocId", "UserName", "Address",
+    "Phone", "Mobile", "Fax", "Email", "DateOfBirth", "Nationality", "VisaType", "VisaExpiryDate",
+    "DrivingLicenseType", "DrivingLicenseNo", "DLPlaceOfIssue", "DLIssueDate", "DLExpiryDate", "Rate",
+    "DriverCharges", "AddDriverCharges", "CDW", "PAI", "ExcessKmCharge", "FuelCharges", "SalikCharges",
+    "ExcessInsCharges", "TrafficCharges", "MileageCap", "OtherCharges", "DiscountType", "Discount", "Advance",
+    "Subtotal", "PaymentMode", "SalesPersonId", "Remarks", "ConfirmationRefValue", "IsAdvanceInvoice",
+    "BillingType",
+}

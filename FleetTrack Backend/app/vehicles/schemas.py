@@ -135,3 +135,10 @@ class VehicleResponse(BaseModel):
     LocId: int | None = None
     FuelLevel: int | None = None
     VHType: str | None = None
+
+
+class PaginatedVehicleResponse(BaseModel):
+    items: list[VehicleResponse]
+    total: int = Field(ge=0)
+    offset: int = Field(ge=0)
+    limit: int = Field(ge=1)

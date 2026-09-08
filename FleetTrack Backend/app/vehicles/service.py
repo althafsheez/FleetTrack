@@ -58,6 +58,12 @@ def list_vehicles(db, **filters):
         return repo.list_vehicles(db, **filters)
 
 
+def get_vehicles_page(db, **filters):
+    with database_errors(db):
+        items, total = repo.get_vehicles_page(db, **filters)
+        return {"items": items, "total": total, "offset": filters["offset"], "limit": filters["limit"]}
+
+
 def create_vehicle(db, payload):
     values = payload.model_dump()
     now = datetime.now(timezone.utc).replace(tzinfo=None)

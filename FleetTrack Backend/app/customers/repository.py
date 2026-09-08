@@ -9,6 +9,19 @@ def get_all_customers(db:Session):
         .all()
     )
 
+
+def get_customers_page(db: Session, offset: int, limit: int):
+    query = db.query(TblAccountLedger).filter(TblAccountLedger.accountGroupId == 26)
+    total = query.count()
+    items = (
+        query
+        .order_by(TblAccountLedger.ledgerId)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return items, total
+
 def get_customer_by_id(db:Session, customerId:int):
     return(
         db.query(TblAccountLedger)
@@ -67,3 +80,20 @@ def search_customers(db: Session, name: str = None, mobile: str = None):
         query = query.filter(TblAccountLedger.mobile.ilike(f"%{mobile}%"))
 
     return query.all()
+
+
+def search_customers_page(
+    db: Session,
+    offset: int,
+    limit: int,
+    name: str = None,
+    mobile: str = None,
+):
+    query = db.query(TblAccountLedger).filter(TblAccountLedger.accountGroupId == 26)
+    if name:
+        query = query.filter(TblAccountLedger.ledgerName.ilike(f"%{name}%"))
+    if mobile:
+        query = query.filter(TblAccountLedger.mobile.ilike(f"%{mobile}%"))
+    total = query.count()
+    items = query.order_by(TblAccountLedger.ledgerId).offset(offset).limit(limit).all()
+    return items, total

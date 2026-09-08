@@ -2,9 +2,23 @@ from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from . import service
-from .schemas import VehicleCreate, VehicleUpdate, VehicleResponse
+from .schemas import PaginatedVehicleResponse, VehicleCreate, VehicleUpdate, VehicleResponse
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
+
+
+@router.get("/page", response_model=PaginatedVehicleResponse)
+def get_vehicles_page(
+    q: str | None = Query(None, max_length=200),
+    plate_no: str | None = Query(None, max_length=50),
+    fleet_no: str | None = Query(None, max_length=50),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    return service.get_vehicles_page(
+        db, q=q, plate_no=plate_no, fleet_no=fleet_no, offset=offset, limit=limit
+    )
 
 
 @router.get("/", response_model=list[VehicleResponse])

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, logout, type AuthenticatedUser } from "@/lib/api";
+import { FleetSidebar } from "@/components/fleet-sidebar";
 
 type Contract = {
   agreement: string;
@@ -70,28 +70,7 @@ export default function DashboardPage() {
 
   return (
     <div className="ft-app">
-      <aside className="ft-sidenav">
-        <div className="ft-nav-top">
-          <div className="ft-brand">
-            <div className="ft-brand-mark"><Icon>local_shipping</Icon></div>
-            <div><div className="ft-brand-name">FleetTrack</div><div className="ft-brand-version">Enterprise Logistics v4.2</div></div>
-          </div>
-          <nav className="ft-nav">
-            <Link className="ft-nav-link ft-nav-active" href="/dashboard"><Icon>dashboard</Icon>Dashboard</Link>
-            <Link className="ft-nav-link" href="/customers"><Icon>group</Icon>Customers</Link>
-            <a className="ft-nav-link" href="#vehicles"><Icon>directions_car</Icon>Vehicles</a>
-            <a className="ft-nav-link" href="#tariffs"><Icon>payments</Icon>Tariffs</a>
-            <div className="ft-nav-contracts">
-              <button className="ft-nav-link ft-nav-contract-button" type="button"><span><Icon>description</Icon>Contracts</span><Icon>expand_less</Icon></button>
-              <div className="ft-contract-subnav"><a href="#add-contract"><i />Add Contract</a><a href="#view-contracts"><i />View Contracts</a></div>
-            </div>
-          </nav>
-        </div>
-        <div className="ft-nav-bottom">
-          <div className="ft-connectivity"><div><span>System state</span><b>[Demo]</b></div><div><span>Integration state</span><b>[Demo]</b></div></div>
-          <div className="ft-footer-nav"><a href="#status"><Icon>sensors</Icon>System Status</a><a href="#settings"><Icon>settings</Icon>Settings</a><button type="button">Collapse Menu <Icon>menu_open</Icon></button></div>
-        </div>
-      </aside>
+      <FleetSidebar />
 
       <div className="ft-main-frame">
         <header className="ft-topbar">

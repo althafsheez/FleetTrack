@@ -2,6 +2,8 @@
 import unittest
 from datetime import datetime
 from decimal import Decimal
+from io import BytesIO
+from pypdf import PdfReader
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -27,6 +29,7 @@ from app.contracts.schemas import (
     ContractDriverResponse,
     ContractDriverUpdate,
     ContractResponse,
+    ContractPrintData,
     ContractViewRow,
 )
 
@@ -81,6 +84,11 @@ class ContractAPI(unittest.TestCase):
     TABLES = {
         "tbl_AccountLedger",
         "VT_Veh_VehicleMaster",
+        "VT_Veh_ModelMaster",
+        "VT_Veh_MakeMaster",
+        "VT_Veh_ColourMaster",
+        "VT_Veh_PlateCodeMaster",
+        "VT_Veh_TariffGroupMaster",
         "VT_ContractMaster",
         "VT_ContractDriverDtls",
         "VT_ContractVehicleMaster",
@@ -116,6 +124,16 @@ class ContractAPI(unittest.TestCase):
         self.db.execute(table.insert().values(**_required_values(table, **overrides)))
 
     def _seed_reference_data(self):
+        self._insert_required("VT_Veh_MakeMaster", MakeId=1, MakeName="MG")
+        self._insert_required("VT_Veh_ModelMaster", ModelId=1, ModelName="MG 5", MakeId=1)
+        self._insert_required("VT_Veh_ColourMaster", ColourId=1, ColourName="SILVER")
+        self._insert_required("VT_Veh_PlateCodeMaster", PlateCodeId=1, PlateCodeName="", Code="")
+        self._insert_required(
+            "VT_Veh_TariffGroupMaster",
+            TariffGroupId=1,
+            TariffGroupName="MG5",
+            AllowedKmsPerDay=Decimal("83.33"),
+        )
         self._insert_required(
             "tbl_AccountLedger",
             ledgerId=138274,
@@ -257,6 +275,7 @@ class ContractAPI(unittest.TestCase):
         ContractViewRow.model_validate(rows[0])
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["slNo"], 1)
+        self.assertIsInstance(rows[0]["assignmentId"], int)
         self.assertEqual(rows[0]["agreementNo"], "3407")
         self.assertEqual(rows[0]["customer"], "EZhire")
         self.assertEqual(rows[0]["vehicle"], "DD 95117")
@@ -268,9 +287,52 @@ class ContractAPI(unittest.TestCase):
         self.assertEqual(rows[0]["pendingAmount"], Decimal("360.00"))
 
         self.assertEqual(len(contract_service.list_contract_view(self.db, customer_name="hire")), 1)
-        self.assertEqual(len(contract_service.list_contract_view(self.db, agreement_no="407")), 1)
+        self.assertEqual(len(contract_service.list_contract_view(self.db, agreement_no="3407")), 1)
+        self.assertEqual(contract_service.list_contract_view(self.db, agreement_no="407"), [])
         self.assertEqual(len(contract_service.list_contract_view(self.db, vehicle="95117")), 1)
         self.assertEqual(contract_service.list_contract_view(self.db, vehicle="missing"), [])
+
+    def test_contract_print_data_uses_selected_assignment_and_only_applicable_rate(self):
+        contract = contract_service.create_contract(self.db, ContractCreate(**self._payload()))
+        assignment_id = contract["vehicle_assignment"]["Id"]
+
+        result = contract_service.get_contract_print_data(self.db, contract["ContractId"], assignment_id)
+
+        ContractPrintData.model_validate(result)
+        self.assertEqual(result["assignmentId"], assignment_id)
+        self.assertEqual(result["agreementNo"], "3407")
+        self.assertEqual(result["hirerName"], "322384 - MOHAMED TASHRIQ")
+        self.assertEqual(result["nationality"], "Singapore")
+        self.assertEqual(result["vehicleMake"], "MG")
+        self.assertEqual(result["vehicleModel"], "MG 5")
+        self.assertEqual(result["plateNumber"], "DD 95117")
+        self.assertEqual(result["colour"], "SILVER")
+        self.assertEqual(result["dailyPrice"], Decimal("100.00"))
+        self.assertIsNone(result["weeklyPrice"])
+        self.assertIsNone(result["monthlyPrice"])
+        self.assertEqual(result["allowedKm"], Decimal("83.33"))
+        self.assertEqual(result["otherCharges"], Decimal("12.50"))
+
+        with self.assertRaisesRegex(Exception, "assignment"):
+            contract_service.get_contract_print_data(self.db, contract["ContractId"], 999)
+
+    def test_contract_print_pdf_preserves_two_page_template_and_adds_values(self):
+        contract = contract_service.create_contract(self.db, ContractCreate(**self._payload()))
+        assignment_id = contract["vehicle_assignment"]["Id"]
+
+        content, agreement_no = contract_service.get_contract_print_pdf(
+            self.db, contract["ContractId"], assignment_id
+        )
+
+        self.assertEqual(agreement_no, "3407")
+        self.assertTrue(content.startswith(b"%PDF"))
+        rendered = PdfReader(BytesIO(content))
+        self.assertEqual(len(rendered.pages), 2)
+        self.assertAlmostEqual(float(rendered.pages[0].mediabox.width), 593.343, places=2)
+        self.assertAlmostEqual(float(rendered.pages[0].mediabox.height), 840.876, places=2)
+        extracted = "\n".join(page.extract_text() or "" for page in rendered.pages)
+        self.assertIn("3407", extracted)
+        self.assertIn("DD 95117", extracted)
 
     def test_contract_driver_crud(self):
         contract = contract_service.create_contract(self.db, ContractCreate(**self._payload()))

@@ -7,12 +7,20 @@ create_customer,
 update_customer,
 delete_customer,
 search_customers
+,
+get_customers_page,
+search_customers_page
 )
 
 from .schemas import CustomerCreate, CustomerUpdate
 
 def get_all_customers_service(db: Session):
     return get_all_customers(db)
+
+
+def get_customers_page_service(db: Session, offset: int, limit: int):
+    items, total = get_customers_page(db, offset, limit)
+    return {"items": items, "total": total, "offset": offset, "limit": limit}
 
 def get_customer_by_id_service(
     db: Session,
@@ -56,3 +64,14 @@ def search_customers_service(
         name,
         mobile
     )
+
+
+def search_customers_page_service(
+    db: Session,
+    offset: int,
+    limit: int,
+    name: str = None,
+    mobile: str = None,
+):
+    items, total = search_customers_page(db, offset, limit, name, mobile)
+    return {"items": items, "total": total, "offset": offset, "limit": limit}

@@ -14,7 +14,7 @@ All customer, supplier, lookup, vehicle, tariff and contract endpoints require t
 
 ## Contract agreement create and view — 2026-09-07
 
-Backend only. `POST /contracts/` creates a vehicle contract agreement from the Add screen. `GET /contracts/view` lists/searches contracts for the View Contracts grid. Driver detail CRUD is available for `VT_ContractDriverDtls`. No contract header edit, contract delete, full contract detail screen, checkout transition endpoint, invoice posting, receipt posting, or frontend screen is implemented by this slice.
+`POST /contracts/` creates a vehicle contract agreement from the Add screen. `GET /contracts/view` and `/contracts/view/page` list/search contracts for the Contract View register. `GET /contracts/{contract_id}` composes the legacy contract header with its first driver and vehicle-assignment snapshots. `PATCH /contracts/{contract_id}` updates the supported header, driver and handover fields in one transaction. `GET /contracts/{contract_id}/print-data` composes the deliberately limited values used by the approved two-page paper agreement. Customer and assigned-vehicle ownership are intentionally immutable in this MVP edit route. Contract delete, checkout transition, invoice posting and receipt posting remain unimplemented.
 
 Create writes three rows in one transaction:
 
@@ -30,14 +30,20 @@ Contract driver detail endpoints:
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET | `/contracts/view?customerName=...&agreementNo=...&vehicle=...&offset=0&limit=100` | List/search contracts for the View Contracts grid. Filters are optional and combine when supplied. |
+| GET | `/contracts/view?customerName=...&agreementNo=...&vehicle=...&offset=0&limit=100` | List/search contracts for the View Contracts grid. Filters are optional and combine when supplied. Customer and vehicle use partial matching; agreement number uses exact matching. |
+| GET | `/contracts/view/page?customerName=...&agreementNo=...&vehicle=...&offset=0&limit=10` | Additive paginated View Contracts response: `{items,total,offset,limit}` with the same combined-filter semantics. The array response above is preserved. |
+| GET | `/contracts/{contract_id}` | Return `{contract,driver,vehicleAssignment}` for the full-record View/Edit drawer. |
+| GET | `/contracts/{contract_id}/print-data?assignmentId=...` | Return the approved print projection for one exact contract-vehicle assignment. The assignment must belong to the contract. This endpoint is read-only. |
+| PATCH | `/contracts/{contract_id}` | Update supplied MVP-safe contract, driver and handover fields. Requires `UpdatedBy`; customer and assigned vehicle cannot be changed. |
 | GET | `/contracts/drivers/?contract_id=...&q=...` | List driver detail rows from `VT_ContractDriverDtls`, optionally scoped to one contract and filtered by username. |
 | GET | `/contracts/drivers/{driver_id}` | Get one driver detail row by `ContractDriverId`. |
 | POST | `/contracts/drivers/` | Add a driver detail row for an existing `VT_ContractMaster.ContractId`. |
 | PATCH, PUT | `/contracts/drivers/{driver_id}` | Update supplied driver detail fields only. |
 | DELETE | `/contracts/drivers/{driver_id}` | Delete one driver detail row. |
 
-View Contracts response rows use frontend-oriented names: `slNo`, `contractId`, `agreementNo`, `customer`, `dateOut`, `dateIn`, `totalDays`, `rate`, `vehicleId`, `vehicle`, `rent`, `salik`, `fine`, `received`, and `pendingAmount`. For the demo grid, rent is calculated as `Rate * totalDays`, Salik from `SalikCharges`, fine from `TrafficCharges`, received from `Advance`, and pending as the visible total less received.
+View Contracts response rows use frontend-oriented names: `slNo`, `contractId`, `assignmentId`, `agreementNo`, `customer`, `dateOut`, `dateIn`, `totalDays`, `rate`, `vehicleId`, `vehicle`, `rent`, `salik`, `fine`, `received`, and `pendingAmount`. `assignmentId` is `VT_ContractVehicleMaster.Id` and uniquely identifies each contract-vehicle history row; it is intentionally distinct from the contract and vehicle IDs. For the demo grid, rent is calculated as `Rate * totalDays`, Salik from `SalikCharges`, fine from `TrafficCharges`, received from `Advance`, and pending as the visible total less received.
+
+The print projection populates only values visibly populated in the supplied legacy example: agreement number; hirer identification, nationality, birth/licence/contact fields; selected vehicle make/model/plate/colour; the one applicable contract rate; allowed kilometres; other charges; checkout date; and repeated hirer names on the checklist. Unrecorded inspection, signature, accident, passport-issue, email/address and card fields remain blank on paper. Rate placement is chosen from the contract-type label: monthly names populate Monthly Price, weekly names populate Weekly Price, and all other types populate Daily Price.
 
 Additional lookup endpoints:
 
@@ -59,7 +65,7 @@ Additional lookup endpoints:
 | GET | `/lookups/confirmation-ref-types` | `VT_LookupTable` rows for corporate/individual confirmation refs |
 | GET | `/lookups/contract-statuses` | `VT_StatusMaster` rows where `StatusTypeId=2` |
 
-Verification: isolated SQLite contract service tests pass for header/driver/vehicle inserts, reference validation, customer ID copying, View Contracts grid rows/search filters, driver CRUD and no vehicle status mutation. OpenAPI exposes `POST /contracts/`, `GET /contracts/view`, the driver CRUD routes and the new lookup routes. Live MSSQL read-only checks passed for the View Contracts response shape plus contract types, customer users for `EZhire`/`322384 - MOHAMED TASHRIQ` from `VT_ContractDriverDtls`, payment modes, billing types and application users. No live MSSQL contract write was performed. The installed `fastapi.testclient`/httpx combination hangs even with a one-route toy app, so full TestClient-based API discovery was not rerun in this environment.
+Verification: isolated SQLite contract service tests pass for header/driver/vehicle inserts, reference validation, customer ID copying, View Contracts grid rows/search filters, driver CRUD and no vehicle status mutation. OpenAPI exposes the create/list/detail/update routes, driver CRUD and lookup routes. Live MSSQL read-only checks passed for the paginated register and a composed contract detail response, and the authenticated frontend rendered both View and Edit drawers from that data. No live MSSQL contract write was performed, so PATCH runtime behavior remains UNKNOWN against MSSQL.
 
 ---
 
@@ -69,6 +75,7 @@ These endpoints now supersede the earlier proposals below for this slice. Backen
 
 | Method | Path | Behavior |
 | --- | --- | --- |
+| GET | `/vehicles/page` | Paginated list/search envelope. Supports the same optional `q`, `plate_no`, and `fleet_no` filters plus `offset=0` and `limit=10` (maximum 100). Returns `{items, total, offset, limit}` ordered by VehicleId. |
 | GET | `/vehicles/`, `/vehicles/search` | List/search; optional `q` matches plate/fleet/chassis/engine, `plate_no`, `fleet_no`; filters combine; literal wildcard escaping; `offset=0`, `limit=100` (maximum 500); ordered by VehicleId. |
 | GET | `/vehicles/{vehicle_id}` | Full persisted fields, including unchanged legacy insurance IDs. |
 | POST | `/vehicles/` | Create; returns 201 and full record. See VehicleCreate in OpenAPI for required master/date fields. |
@@ -80,7 +87,7 @@ These endpoints now supersede the earlier proposals below for this slice. Backen
 | GET, PATCH | `/vehicle-tariff-groups/{group_id}/rates` | Read/initialize/update 17 pricing values on the existing group row. Missing group returns 404; create its name first. PATCH changes supplied fields only. |
 | GET | `/lookups/insurance-types` | Existing insurance-type master rows; legacy type 3 is not invented as a lookup row. |
 
-Responses: validation errors 422; missing records 404; known constraint/reference conflicts 409; other database failures 503 with sanitized details. Lists are JSON arrays, not total-count envelopes. Vehicle lists retain pagination; tariff-group list/search return all matches. Existing customer/supplier/lookup response contracts were preserved.
+Responses: validation errors 422; missing records 404; known constraint/reference conflicts 409; other database failures 503 with sanitized details. The additive `/vehicles/page` endpoint is the total-count envelope for the frontend; the older vehicle list/search responses remain JSON arrays. Tariff-group list/search return all matches. Existing customer/supplier/lookup response contracts were preserved.
 
 ### Vehicle write rules
 
@@ -127,6 +134,8 @@ Evidence: route decorators and `app/main.py` registration, inspected 2026-09-06.
 | GET | `/` | Fixed `{"message": "Backend is running!"}`; no database probe. |
 | GET | `/customers/search` | Optional `name` and `mobile` query filters, AND when both supplied. |
 | GET | `/customers/` | List group-scoped ledgers; no pagination. |
+| GET | /customers/page | Paginated customer list. Query: offset (default 0) and limit (default 10; 1–100). Returns items, total, offset, and limit, ordered by ledger ID. |
+| GET | /customers/search/page | Paginated customer search. Supports the same name/mobile filters plus offset and limit; response has the same page envelope. |
 | GET | `/customers/{customerId}` | Get group-scoped ID; 404 when absent. |
 | POST | `/customers/` | Create via CustomerCreate; uppercase ledgerName. |
 | PUT | `/customers/{customerId}` | Full update schema; name/mobile/emirateId required; absent optional fields become None; 404 when absent. |

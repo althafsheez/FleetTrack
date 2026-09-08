@@ -141,3 +141,10 @@ class CustomerResponse(BaseModel):
     areaId: Optional[int] = None
 
     isCorporate: Optional[bool] = None
+
+
+class PaginatedCustomerResponse(BaseModel):
+    items: list[CustomerResponse]
+    total: int = Field(ge=0)
+    offset: int = Field(ge=0)
+    limit: int = Field(ge=1)

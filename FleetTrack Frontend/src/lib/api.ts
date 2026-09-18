@@ -262,9 +262,9 @@ async function fleetRequest<T>(path: string, init?: RequestInit): Promise<T> {
   throw new Error("FleetTrack could not complete that request. Please try again.");
 }
 
-export function getTariffGroups(q?: string) { return fleetRequest<TariffGroup[]>(q?.trim() ? `/vehicle-tariff-groups/search?q=${encodeURIComponent(q.trim())}` : "/vehicle-tariff-groups/"); }
+export function getTariffGroups(q?: string) { return fleetRequest<TariffGroup[]>(q?.trim() ? `/vehicle-tariff-groups/search?q=${encodeURIComponent(q.trim())}` : "/vehicle-tariff-groups"); }
 export function getTariffGroup(groupId: number) { return fleetRequest<TariffRates>(`/vehicle-tariff-groups/${groupId}`); }
-export function createTariffGroup(TariffGroupName: string) { return fleetRequest<TariffGroup>("/vehicle-tariff-groups/", { method: "POST", body: JSON.stringify({ TariffGroupName }) }); }
+export function createTariffGroup(TariffGroupName: string) { return fleetRequest<TariffGroup>("/vehicle-tariff-groups", { method: "POST", body: JSON.stringify({ TariffGroupName }) }); }
 export function updateTariffGroup(groupId: number, payload: Partial<TariffRates>) { return fleetRequest<TariffRates>(`/vehicle-tariff-groups/${groupId}`, { method: "PATCH", body: JSON.stringify(payload) }); }
 
 export function getContractsPage(offset = 0, limit = 10, filters: { customerName?: string; agreementNo?: string; vehicle?: string } = {}) {

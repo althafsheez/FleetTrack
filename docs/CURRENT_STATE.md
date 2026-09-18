@@ -1,5 +1,15 @@
 # Current state audit
 
+## Latest implementation - same-origin tunnel authentication
+
+The frontend now proxies browser `/api/*` requests to the locally reachable FastAPI server through a server-side Next.js rewrite. `NEXT_PUBLIC_API_URL=/api` keeps login, session recovery, logout, data requests, and PDF printing on the frontend hostname, allowing the signed HTTP-only session cookie to remain first-party when the frontend is exposed through a Cloudflare Tunnel. `BACKEND_API_URL` is server-only and defaults to `http://127.0.0.1:8000`. `AUTH_COOKIE_SECURE=true` is required for the HTTPS tunnel. The previous two-public-tunnel configuration is no longer required for browser access.
+
+Verification: frontend TypeScript check and the five backend authentication regression tests pass. Live tunnel login remains UNKNOWN until the frontend and backend are restarted and tested through the single frontend tunnel.
+
+## Latest implementation - tariff proxy redirect fix
+
+The tariff-group collection endpoints and frontend collection calls now use the canonical no-trailing-slash path, `/vehicle-tariff-groups`. This prevents FastAPI's automatic 307 slash redirect from causing a second proxied request without the signed session cookie. No tariff data, schemas, or database structure changed. Frontend TypeScript, tariff-router Python compilation, and whitespace checks pass; live browser verification requires a backend restart.
+
 ## Latest implementation — portal authentication
 
 FleetTrack now has backend authentication against existing `VT_ApplicationUsers` portal accounts. Read-only MSSQL inspection confirmed status `1` is Active, status `2` is Inactive, and all 13 stored password values use a 47-character hyphenated 16-byte digest representation. The compatibility verifier recognizes that legacy MD5 representation without returning or logging stored values. This is legacy compatibility, not a recommendation for new password storage.

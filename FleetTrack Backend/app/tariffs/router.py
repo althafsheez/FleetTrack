@@ -7,7 +7,7 @@ from .schemas import TariffGroupCreate, TariffGroupResponse, TariffRatesUpdate, 
 router = APIRouter(prefix="/vehicle-tariff-groups", tags=["Tariff groups"])
 
 
-@router.get("/", response_model=list[TariffGroupResponse], summary="List all tariff groups")
+@router.get("", response_model=list[TariffGroupResponse], summary="List all tariff groups")
 def list_groups(db: Session = Depends(get_db)):
     return service.list_groups(db)
 
@@ -18,7 +18,7 @@ def search_groups(q: str = Query(..., min_length=1, max_length=100),
     return service.list_groups(db, q=q)
 
 
-@router.post("/", response_model=TariffGroupResponse, status_code=201)
+@router.post("", response_model=TariffGroupResponse, status_code=201)
 def create_group(payload: TariffGroupCreate, db: Session = Depends(get_db)):
     return service.create_group(db, payload)
 

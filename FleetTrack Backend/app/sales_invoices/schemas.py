@@ -134,4 +134,46 @@ class InvoiceLookup(BaseModel):
     name: str
     taxId: int | None = None
     taxRate: Decimal | None = None
+    rate: Decimal | None = None
+    currencyId: int | None = None
+    currencyName: str | None = None
+    currencySymbol: str | None = None
+    contractId: int | None = None
+    contractRefNo: str | None = None
+    vehicleId: int | None = None
+    plateCode: str | None = None
+    plateNo: str | None = None
+    statusId: int | None = None
+    startDate: datetime | None = None
+    endDate: datetime | None = None
 
+
+class InvoiceNumberingRule(BaseModel):
+    suffixPrefixId: int
+    prefix: str | None = None
+    suffix: str | None = None
+    startIndex: int | None = None
+    widthOfNumericalPart: int | None = None
+    prefillWithZero: bool | None = None
+    fromDate: datetime | None = None
+    toDate: datetime | None = None
+
+
+class InvoiceSourceLine(BaseModel):
+    sourceType: Literal["rental", "fine", "salik"]
+    sourceId: str
+    itemTypeId: int
+    vehicleId: int | None = None
+    description: str
+    quantity: Decimal
+    unitId: int
+    rate: Decimal
+    taxId: int
+    sourceDate: datetime | None = None
+
+
+class InvoiceSourceLines(BaseModel):
+    invoiceType: InvoiceType
+    contractId: int
+    contractRefNo: str
+    lines: list[InvoiceSourceLine]

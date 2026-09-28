@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const icons: Record<string, string> = {
   local_shipping: "▰", dashboard: "⊞", group: "♙", directions_car: "◆",
-  payments: "¤", description: "▤", sensors: "◌", settings: "⚙", menu_open: "≪",
+  payments: "¤", description: "▤", compare_arrows: "↔", sensors: "◌", settings: "⚙", menu_open: "≪",
 };
 
 function Icon({ name }: { name: string }) {
@@ -17,6 +17,7 @@ const availablePages = [
   { href: "/customers", label: "Customers", icon: "group" },
   { href: "/vehicles", label: "Vehicles", icon: "directions_car" },
   { href: "/tariffs", label: "Tariffs", icon: "payments" },
+  { href: "/rental-invoices", label: "Rental Invoices", icon: "description" },
 ];
 
 export function FleetSidebar() {
@@ -32,7 +33,10 @@ export function FleetSidebar() {
             <Link className={pathname === "/contracts" ? "ft-subnav-active" : ""} href="/contracts"><i />Add Contract</Link>
             <Link className={pathname === "/contracts/list" ? "ft-subnav-active" : ""} href="/contracts/list"><i />Contract View</Link>
           </div>
-        </div>
+          </div>
+        <span className="ft-nav-section">Financial Accounts</span>
+        <Link className={`ft-nav-link ${pathname.startsWith("/contra-vouchers") ? "ft-nav-active" : ""}`} href="/contra-vouchers"><Icon name="compare_arrows" />Contra Vouchers</Link>
+        <Link className={`ft-nav-link ${pathname.startsWith("/payment-vouchers") ? "ft-nav-active" : ""}`} href="/payment-vouchers"><Icon name="payments" />Payment Vouchers</Link>
       </nav>
     </div>
     <div className="ft-nav-bottom"><div className="ft-connectivity"><div><span>System state</span><b>[Demo]</b></div><div><span>Integration state</span><b>[Demo]</b></div></div><div className="ft-footer-nav"><span><Icon name="sensors" />System Status</span><span><Icon name="settings" />Settings</span><button type="button"><span>Collapse Menu</span><Icon name="menu_open" /></button></div></div>

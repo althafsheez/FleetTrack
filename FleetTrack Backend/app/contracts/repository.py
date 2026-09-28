@@ -1,5 +1,6 @@
 from sqlalchemy import String, and_, cast, func, or_, select
 from app.generated_models.models import (
+    Base,
     TblAccountLedger,
     TblVehicleContractType,
     VTContractDriverDtls,
@@ -26,6 +27,7 @@ COLOUR_TABLE = VTVehColourMaster.__table__
 PLATE_CODE_TABLE = VTVehPlateCodeMaster.__table__
 TARIFF_TABLE = VTVehTariffGroupMaster.__table__
 NATIONALITY_TABLE = t_VT_Nationality
+SALES_MASTER_TABLE = Base.metadata.tables["tbl_SalesMaster"]
 
 
 def get_customer(db, customer_id):
@@ -55,6 +57,15 @@ def get_contract(db, contract_id):
     return db.execute(
         select(CONTRACT_TABLE).where(CONTRACT_TABLE.c.ContractId == contract_id)
     ).mappings().first()
+
+
+def has_rental_invoice(db, contract_id):
+    return db.execute(
+        select(SALES_MASTER_TABLE.c.salesMasterId).where(
+            SALES_MASTER_TABLE.c.contractId == contract_id,
+            SALES_MASTER_TABLE.c.voucherTypeId == 31,
+        ).limit(1)
+    ).first() is not None
 
 
 def get_driver(db, contract_id):

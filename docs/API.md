@@ -10,21 +10,110 @@ Authentication uses existing `VT_ApplicationUsers` records, not the separate Bal
 | GET | `/auth/me` | Returns `{userId, userName, displayName}` for the current session; 401 when missing, invalid or expired. |
 | POST | `/auth/logout` | Clears the browser session cookie and returns 204. |
 
-All customer, supplier, lookup, vehicle, tariff and contract endpoints require the session cookie. Frontend cross-origin requests must use credentials. Local development must configure `AUTH_SECRET` with at least 32 characters; `AUTH_SESSION_TTL_SECONDS` defaults to eight hours and `AUTH_COOKIE_SECURE` must be true behind production HTTPS. The backend recognizes the portal's existing 47-character hyphenated MD5 digest representation strictly for legacy login compatibility. It never returns password fields. Registration, password changes/resets, roles, permission checks and server-side session revocation are not implemented.
+All customer, supplier, lookup, vehicle, tariff, contract, sales-invoice, rental-billing, Contra Voucher, Payment Voucher, and Receipt Voucher endpoints require the session cookie. Frontend cross-origin requests must use credentials. Local development must configure `AUTH_SECRET` with at least 32 characters; `AUTH_SESSION_TTL_SECONDS` defaults to eight hours and `AUTH_COOKIE_SECURE` must be true behind production HTTPS. The backend recognizes the portal's existing 47-character hyphenated MD5 digest representation strictly for legacy login compatibility. It never returns password fields. Registration, password changes/resets, roles, permission checks and server-side session revocation are not implemented.
+
+## Receipt Voucher backend — 2026-09-28
+
+Receipt Voucher uses direct SQLAlchemy table operations and does not call application stored procedures. Draft save and accounting post are separate operations. The initial verified scope is AED only, with `Against` and `On Account` allocation types.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/receipt-vouchers/page` | Paginated register with inclusive dates, voucher/type, receiving account, exact amount, party, cheque, posting-state, and pagination filters. |
+| GET | `/receipt-vouchers/{receipt_master_id}` | Header, detail lines, currency data, lifecycle state, and nested allocations. |
+| POST | `/receipt-vouchers/` | Creates one unposted draft atomically. Returns 201. |
+| PATCH | `/receipt-vouchers/{receipt_master_id}` | Reconciles owned detail and allocation rows on an unposted draft. |
+| DELETE | `/receipt-vouchers/{receipt_master_id}` | Deletes an eligible unposted, unreferenced, unreconciled draft. Returns 204. |
+| POST | `/receipt-vouchers/{receipt_master_id}/post` | Revalidates balances, creates balanced ledger/party effects, and marks posted atomically. |
+| POST | `/receipt-vouchers/{receipt_master_id}/unpost` | Preserves draft allocations and reverses active effects unless referenced or reconciled. |
+| GET | `/receipt-vouchers/{receipt_master_id}/print-data` | Stable backend print projection. |
+| GET | `/receipt-vouchers/lookups/voucher-types` | Active Receipt Voucher subtypes. |
+| GET | `/receipt-vouchers/lookups/receiving-accounts` | Cash-in Hand, Bank Account, and Bank OD receiving ledgers. |
+| GET | `/receipt-vouchers/lookups/detail-accounts` | Searchable ledgers with the verified `billByBill` marker. |
+| GET | `/receipt-vouchers/lookups/party-ledgers` | Searchable bill-by-bill Sundry Creditor/Debtor ledgers. |
+| GET | `/receipt-vouchers/lookups/exchange-rates?date=...` | The supported AED rate valid on the selected date. |
+| GET | `/receipt-vouchers/lookups/numbering-rule?voucherTypeId=...&date=...` | Numbering metadata and non-reserved next-number preview. |
+| GET | `/receipt-vouchers/party-ledgers/{ledger_id}/open-references` | Outstanding debit references available for Against allocation. |
+| GET | `/receipt-vouchers/party-ledgers/{ledger_id}/contracts` | Contracts belonging to the selected party for optional On Account attribution. |
+
+Cash Receipt lines prohibit cheque fields. Cheque Receipt lines require both cheque number and cheque date. The server derives financial year, numbering, exchange rate, contract/source evidence, totals, allocations, and ledger postings. `New`, foreign currency, Credit Card instrument semantics, and reconciliation reversal remain unsupported until separately verified.
+
+## Payment Voucher backend and frontend — 2026-09-28
+
+Payment Voucher uses direct SQLAlchemy table operations and does not call the inspected application stored procedures. Draft save and accounting post are separate operations. The Next.js `/payment-vouchers` screen consumes these routes for the register, draft editor, nested bill allocation, posting lifecycle, and browser printing.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/payment-vouchers/page` | Paginated register with optional inclusive date-only `fromDate`/`toDate`, partial `voucherNo`, `voucherTypeId`, `payingLedgerId`, exact `amount`, detail `partyLedgerId`, partial detail `chequeNo`, and `posted` filters. Party and cheque matching use existence checks, so multi-line vouchers remain one row. Rows include detail-account names and line counts. |
+| GET | `/payment-vouchers/{payment_master_id}` | Header, lines, currencies, vehicles, posting state, and nested party allocations. |
+| POST | `/payment-vouchers/` | Creates an unposted draft atomically. Returns 201. |
+| PATCH | `/payment-vouchers/{payment_master_id}` | Reconciles owned detail/allocation rows on an unposted draft. |
+| DELETE | `/payment-vouchers/{payment_master_id}` | Deletes an unposted, unreferenced, unreconciled draft. Returns 204. |
+| POST | `/payment-vouchers/{payment_master_id}/post` | Revalidates pending balances, creates balanced ledger/party effects, and marks posted atomically. |
+| POST | `/payment-vouchers/{payment_master_id}/unpost` | Preserves draft allocations and reverses active effects unless referenced or reconciled. |
+| GET | `/payment-vouchers/{payment_master_id}/print-data` | Stable print projection used by the frontend browser-print view. |
+| GET | `/payment-vouchers/lookups/voucher-types` | Active voucher types whose `typeOfVoucher` is Payment Voucher. |
+| GET | `/payment-vouchers/lookups/paying-accounts` | Cash-in Hand, Bank Account, and Bank OD source ledgers, including descendant groups. |
+| GET | `/payment-vouchers/lookups/detail-accounts` | Searchable ledger list with a verified `billByBill` marker. |
+| GET | `/payment-vouchers/lookups/party-ledgers` | Searchable bill-by-bill Sundry Creditor/Debtor ledger list for the register Party filter. |
+| GET | `/payment-vouchers/lookups/exchange-rates?date=...` | Latest configured rate per currency on or before the date. |
+| GET | `/payment-vouchers/lookups/vehicles` | Optional vehicle attribution lookup. |
+| GET | `/payment-vouchers/lookups/numbering-rule?voucherTypeId=...&date=...` | Automatic/manual numbering metadata and next-number preview. |
+| GET | `/payment-vouchers/party-ledgers/{ledger_id}/open-references` | Outstanding credit references available for Payment allocation. |
+
+For bill-by-bill party lines, `allocations` contains `against`, `new`, or `on_account` entries. `against` requires the source voucher type/number and cannot exceed the server-recalculated pending amount. Draft allocations use `tbl_PartyBalance_Unposted`; posted allocations use `tbl_PartyBalance`. The API calculates all base totals and accounting rows and never accepts client-supplied posting entries or `isPosted` changes.
+
+## Contra Voucher backend — 2026-09-26
+
+Contra Voucher writes the existing `tbl_ContraMaster`, `tbl_ContraDetails`, and `tbl_LedgerPosting` tables directly through SQLAlchemy. It does not call application stored procedures, alter generated models, or change schema. The Next.js `/contra-vouchers` screen consumes these routes for the register, create/edit/delete workflow, negative-balance confirmation, and browser printing.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/contra-vouchers/page` | Paginated register. Optional inclusive date-only filters: `fromDate`, `toDate`; partial `voucherNo`; header cash/bank `ledgerId`; `direction=deposit|withdrawal`; plus `offset` and `limit`. Rows include detail-account names and line counts. |
+| GET | `/contra-vouchers/{contra_master_id}` | Header and detail lines with currency, exchange rate, converted base amount, and account labels. |
+| POST | `/contra-vouchers/` | Atomically creates header, detail rows, one posting per detail, and one balancing header posting. Returns 201. |
+| PATCH | `/contra-vouchers/{contra_master_id}` | Atomically updates the header, adds/updates/removes owned details, and reconciles all related postings. Voucher number is immutable. |
+| DELETE | `/contra-vouchers/{contra_master_id}` | Atomically deletes postings, details, and header. Returns 204. |
+| GET | `/contra-vouchers/{contra_master_id}/print-data` | Returns the backend print projection; no PDF or UI is implemented. |
+| GET | `/contra-vouchers/lookups/voucher-types` | Returns the active `Contra Voucher` type and numbering method. |
+| GET | `/contra-vouchers/lookups/accounts` | Returns ledgers in the verified `Cash-in Hand`, `Bank Account`, and `Bank OD A/C` account groups. The database `ViewCashBank` is not used because live inspection showed it includes `Sundry Debtors` and excludes `Bank Account`. |
+| GET | `/contra-vouchers/lookups/exchange-rates?date=...` | Returns the latest configured exchange-rate row per currency on or before the date. |
+| GET | `/contra-vouchers/lookups/numbering-rule?date=...` | Returns automatic/manual numbering metadata and the next display number preview. |
+
+The request direction is `deposit` or `withdrawal`; persisted legacy values are `Deposit` and `Withdraw`. Deposit debits the header account and credits each detail account. Withdrawal credits the header account and debits each detail account. Detail base amount is entered amount multiplied by the trusted exchange rate, rounded to five decimal places. The server calculates the total and requires the postings to remain balanced.
+
+Create supports optional `idempotencyKey` (8–100 characters), stored in the existing header extension field. An authenticated retry with the same key returns the existing voucher. Automatic allocation serializes on the Contra voucher-type row using SQL Server update/hold locks; when no date-specific suffix/prefix row exists, it falls back to the plain internal numeric value and stores `suffixPrefixId=0`. Manual numbering requires `manualVoucherNo`. The selected date must belong to a configured financial year. Negative cash policy reads `tbl_Settings.NegativeCashTransaction`; `Block` rejects with `canConfirm=false`, `Warn` returns `canConfirm=true` until `confirmNegativeBalance=true`, and `Ignore` permits the transaction. `tbl_FinancialYearMonthStatus.isEnabled` is not enforced because its open/closed semantics have not been verified.
+
+There are deliberately no `/post` or `/unpost` routes: Contra save writes the ledger postings immediately. Error responses use 404 for missing records, 409 for accounting/state conflicts, 422 for invalid requests/configuration, and sanitized 503 responses for database failures.
+
+## Rental Invoice drafts — 2026-09-23
+
+Rental Invoice records are created only through contract-aware routes. These routes read and write existing transactional rows only; they do not alter database schema, lookup values, master data, or stored procedures.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| POST | `/contracts/{contract_id}/rental-invoices/preview` | Validates existing sales settings and returns the next eligible invoice date, billing period, legacy-derived charge lines, tax, and totals without writing data. Optional body `asOfDate` controls due-date evaluation. |
+| POST | `/contracts/{contract_id}/rental-invoices` | Creates one next-period, unposted Rental Invoice draft. Requires `salesAccountId`, `exchangeRateId`, `creditPeriod`, optional `lpoNo`, and optional `asOfDate`. Rejects Daily, inactive, not-due, duplicate, and invalid-lookup requests. |
+| GET | `/rental-invoices/due?asOfDate=...` | Lists due open Weekly, Monthly, and Lease contracts for staff review. No invoices are created. |
+| DELETE | `/contracts/{contract_id}/rental-invoices/{sales_master_id}` | Deletes only the latest unposted Rental Invoice draft for that contract through existing `dbo.SalesInvoiceDelete`, then restores its prior billing date. |
+
+Monthly and Lease contract creation can include `initialRentalInvoice: {salesAccountId, exchangeRateId, creditPeriod, lpoNo?}`. With `IsAdvanceInvoice` enabled, it creates the first advance Rental Invoice draft in the same transaction as `VT_ContractMaster`, `VT_ContractDriverDtls`, and `VT_ContractVehicleMaster`; the response then includes `initialRentalInvoiceId` and `initialRentalInvoiceNo`. Monthly/Lease default to advance billing unless `IsAdvanceInvoice` is explicitly false. Daily and Weekly must be false and create no initial Rental Invoice. Lease persists `PaymentType=3` (Monthly). After a Rental Invoice exists, contract type, billing type, start date, rate, discount, driver charges, additional-driver charges, CDW, PAI, customer, and vehicle cannot be changed; expected-end-date extension remains allowed.
+
+Generic `POST`, `PATCH`, and `DELETE /sales-invoices` reject `invoiceType: "rental"`; Fine, Salik, Misc, and Vehicle behavior remains on their existing routes. Sales Invoice posting, Active Rentals, check-in, closing, Daily final billing, Fine/Salik billing, and invoice printing are not part of this release. Receipt Voucher and party-allocation APIs are documented separately above.
 
 ## Contract agreement create and view — 2026-09-07
 
 `POST /contracts/` creates a vehicle contract agreement from the Add screen. `GET /contracts/view` and `/contracts/view/page` list/search contracts for the Contract View register. `GET /contracts/{contract_id}` composes the legacy contract header with its first driver and vehicle-assignment snapshots. `PATCH /contracts/{contract_id}` updates the supported header, driver and handover fields in one transaction. `GET /contracts/{contract_id}/print-data` composes the deliberately limited values used by the approved two-page paper agreement. Customer and assigned-vehicle ownership are intentionally immutable in this MVP edit route. Contract delete, checkout transition, invoice posting and receipt posting remain unimplemented.
 
-Create writes three rows in one transaction:
+Create writes these rows in one transaction; an advance Monthly/Lease contract also writes the existing Rental Invoice transaction rows:
 
 | DB table | Purpose |
 | --- | --- |
 | `VT_ContractMaster` | Contract header, customer snapshot, user/person text, rates/charges, payment/status/billing fields. |
 | `VT_ContractDriverDtls` | Driver/user snapshot copied from the same submitted person fields. |
 | `VT_ContractVehicleMaster` | Vehicle assignment/out row with `DatetimeOut`, `KmOut`, `FuelLevelIdOut`, `CheckedOutBy`, and `LocationOut`. |
+| `tbl_SalesMaster`, `tbl_SalesDetails`, `tbl_SalesBillTax` | Initial Rental Invoice draft header, lines, and tax rows only when advance Monthly/Lease billing is requested. |
 
-Accepted rules: `ContractRefNo` is supplied by the UI as an integer and stored as text; `RTACode` is set to the same text; `PaymentType` is copied from `ContractType`; `PaymentMode` stores the Security/Cash selection; `BillingType` defaults to `2` (`Date to Date`); `Status` defaults to `8` (`OPEN`); `ContractVehicleStatus` defaults to `10` (`ACTIVE`); `DriverStatus` defaults to `16`; `OtherCharges` stores Acc Charges; vehicle master `StatusId` is not changed in this phase. `PassportNo` and `PassportExpiryDate` are populated from the selected customer ledger's `CustomerIdNo` and `CustomerIdExpiry` for now, and duplicated into both contract header and driver detail rows.
+Accepted rules: `ContractRefNo` is supplied by the UI as an integer and stored as text; `RTACode` is set to the same text; Daily/Weekly/Monthly payment types match contract type, while Lease uses the existing Monthly payment type; `PaymentMode` stores the Security/Cash selection; `BillingType` defaults to `2` (`Date to Date`); `Status` defaults to `8` (`OPEN`); `ContractVehicleStatus` defaults to `10` (`ACTIVE`); `DriverStatus` defaults to `16`; `OtherCharges` stores Acc Charges; vehicle master `StatusId` is not changed in this phase. `PassportNo` and `PassportExpiryDate` are populated from the selected customer ledger's `CustomerIdNo` and `CustomerIdExpiry` for now, and duplicated into both contract header and driver detail rows.
 
 Contract driver detail endpoints:
 
@@ -194,9 +283,7 @@ All paths below are PROPOSED; none is implemented by this task. Confirm resource
 | POST | `/contracts/{contractId}/check-in` | Verified return/closure transition and agreed charges. |
 | POST | `/contracts/{contractId}/invoices` | Generate invoice using confirmed accounting/posting workflow. |
 | GET | `/invoices/{invoiceId}` | Invoice details and lines. |
-| POST | `/receipts/` | Record payment and verified allocations; settlement model TBD. |
-| GET | `/receipts/{receiptId}` | Receipt detail and allocation evidence. |
-| GET | `/registers/sales-invoices`, `/registers/receipts` | Requested registers; date/customer filters and totals TBD. |
+| GET | `/registers/sales-invoices` | Requested consolidated Sales Invoice register alias; the existing Sales Invoice register route remains separate. |
 
 Additional lookup GETs may be needed for insurance type, fuel level, contract/status/payment types, emirates, nationality, tax, voucher numbering and financial year. Add only those required by verified screens and data rules. Do not infer foreign keys or legal state transitions from these proposed URLs.
 

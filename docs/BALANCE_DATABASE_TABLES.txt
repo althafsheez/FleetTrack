@@ -1,0 +1,233 @@
+Balance database table list
+Live schema checked: 2026-09-19
+Total tables: 229
+
+dbo.Events (no values)
+dbo.INSALIK
+dbo.Options
+dbo.Plate_Category
+dbo.RTALogin
+dbo.Salik_Accounts
+dbo.Salik_Accounts_AUH
+dbo.Salik_Invoice_Temp (no values)
+dbo.Salik_Toll
+dbo.SmtpDetails (no values)
+dbo.Staging_Invoice_Detail
+dbo.Staging_Invoice_Header
+dbo.tbl_AccountGroup
+dbo.tbl_AccountLedger
+dbo.tbl_AdditionalCost (no values)
+dbo.tbl_AdvancePayment
+dbo.tbl_Area
+dbo.tbl_BankReconciliation (no values)
+dbo.tbl_Batch
+dbo.tbl_BonusDeduction
+dbo.tbl_Branch
+dbo.tbl_Brand
+dbo.tbl_BudgetDetails (no values)
+dbo.tbl_BudgetMaster (no values)
+dbo.tbl_Company
+dbo.tbl_CompanyPath
+dbo.tbl_ContraDetails
+dbo.tbl_ContraMaster
+dbo.tbl_Counter
+dbo.tbl_CreditCardType
+dbo.tbl_CreditNoteDetails (no values)
+dbo.tbl_CreditNoteMaster (no values)
+dbo.tbl_Currency
+dbo.tbl_CurrencyToCopy
+dbo.tbl_CustomerTariff
+dbo.tbl_CustomerType
+dbo.tbl_DailyAttendanceDetails
+dbo.tbl_DailyAttendanceMaster
+dbo.tbl_DailySalaryVoucherDetails (no values)
+dbo.tbl_DailySalaryVoucherMaster (no values)
+dbo.tbl_DebitNoteDetails (no values)
+dbo.tbl_DebitNoteMaster (no values)
+dbo.tbl_DeliveryNoteDetails (no values)
+dbo.tbl_DeliveryNoteMaster (no values)
+dbo.tbl_Designation
+dbo.tbl_Details
+dbo.tbl_DetailsCopy
+dbo.tbl_DrivingLicenseType
+dbo.tbl_Emirate
+dbo.tbl_Employee
+dbo.tbl_ExchangeRate
+dbo.tbl_Fields
+dbo.tbl_FieldsCopy
+dbo.tbl_FinanceDetail
+dbo.tbl_FinanceHeader
+dbo.tbl_FinancialYear
+dbo.tbl_FinancialYearMonthStatus
+dbo.tbl_FixedAssetCategory
+dbo.tbl_FixedAssetDepreciationDetail
+dbo.tbl_FixedAssetDepreciationHeader
+dbo.tbl_fixedAssetDeprMethod
+dbo.tbl_FixedAssetDeprSchedule
+dbo.tbl_FixedAssetDisposalDetails (no values)
+dbo.tbl_FixedAssetDisposalType
+dbo.tbl_FixedAssetMaster
+dbo.tbl_Form
+dbo.tbl_FormCopy
+dbo.tbl_Godown
+dbo.tbl_Holiday
+dbo.tbl_JournalDetails
+dbo.tbl_JournalMaster
+dbo.tbl_LedgerPosting
+dbo.tbl_MainMenu (no values)
+dbo.tbl_Master
+dbo.tbl_MasterCopy
+dbo.tbl_ModelNo
+dbo.tbl_MonthlySalary
+dbo.tbl_MonthlySalaryDetails
+dbo.tbl_Months
+dbo.tbl_Nationality
+dbo.tbl_PartyBalance
+dbo.tbl_PartyBalance_Unposted
+dbo.tbl_PayHead
+dbo.tbl_PaymentDetails
+dbo.tbl_PaymentMaster
+dbo.tbl_PaymentMode
+dbo.tbl_PDCClearanceMaster
+dbo.tbl_PDCPayableMaster
+dbo.tbl_PDCReceivableMaster (no values)
+dbo.tbl_PhysicalStockDetails (no values)
+dbo.tbl_PhysicalStockMaster (no values)
+dbo.tbl_Prepayments (no values)
+dbo.tbl_PrepaymentSchedule (no values)
+dbo.tbl_PriceList (no values)
+dbo.tbl_PricingLevel
+dbo.tbl_Privilege
+dbo.tbl_Product
+dbo.tbl_ProductGroup
+dbo.tbl_PurchaseBillTax
+dbo.tbl_PurchaseDetails
+dbo.tbl_PurchaseMaster
+dbo.tbl_PurchaseOrderDetails (no values)
+dbo.tbl_PurchaseOrderMaster (no values)
+dbo.tbl_QuickLaunchItems
+dbo.tbl_Rack
+dbo.tbl_ReceiptDetails
+dbo.tbl_ReceiptMaster
+dbo.tbl_Reminder (no values)
+dbo.tbl_Role
+dbo.tbl_Route
+dbo.tbl_SalaryPackage
+dbo.tbl_SalaryPackageDetails
+dbo.tbl_SalaryVoucherDetails
+dbo.tbl_SalaryVoucherMaster
+dbo.tbl_SalesBillTax
+dbo.tbl_SalesDetailItemType
+dbo.tbl_SalesDetails
+dbo.tbl_SalesDetails_Deleted
+dbo.tbl_SalesInvoiceBillingType
+dbo.tbl_SalesMaster
+dbo.tbl_SalesMaster_Deleted
+dbo.tbl_SalesQuotationDetails
+dbo.tbl_SalesQuotationMaster
+dbo.tbl_SalesReturnBillTax (no values)
+dbo.tbl_SalesReturnDetails (no values)
+dbo.tbl_SalesReturnMaster (no values)
+dbo.tbl_Service (no values)
+dbo.tbl_ServiceCategory (no values)
+dbo.tbl_ServiceDetails (no values)
+dbo.tbl_ServiceMaster (no values)
+dbo.tbl_Settings
+dbo.tbl_SettingsToCopy
+dbo.tbl_Size
+dbo.tbl_StandardRate (no values)
+dbo.tbl_StockJournalDetails (no values)
+dbo.tbl_StockJournalMaster (no values)
+dbo.tbl_StockPosting (no values)
+dbo.tbl_SuffixPrefix
+dbo.tbl_Tax
+dbo.tbl_TaxDetails (no values)
+dbo.tbl_TransactionHistory
+dbo.tbl_Unit
+dbo.tbl_UnitConvertion
+dbo.tbl_User
+dbo.tbl_VehicleContractType
+dbo.tbl_VisaType
+dbo.tbl_VoucherType
+dbo.tbl_VoucherTypeTax
+dbo.tbl_VoucherTypeToCopy
+dbo.Traffic_Fine
+dbo.TripDuration
+dbo.UnregisteredVehicle (no values)
+dbo.VT_ApplicationUserDesignations
+dbo.VT_ApplicationUserRoles
+dbo.VT_ApplicationUsers
+dbo.VT_ApplicationUserStatus
+dbo.VT_BatteryBrandMaster
+dbo.VT_BatterySupplierMaster
+dbo.VT_Company_BranchMaster
+dbo.VT_Company_DepartmentMaster
+dbo.VT_CompanyMaster
+dbo.VT_ContractClosingExtraCharges
+dbo.VT_ContractDocuments
+dbo.VT_ContractDriverDtls
+dbo.VT_ContractHistory
+dbo.VT_ContractMaster
+dbo.VT_ContractPreTerminationTermsForQuotation
+dbo.VT_ContractTypeMaster
+dbo.VT_ContractVehicleMaster
+dbo.VT_CreditCardType
+dbo.VT_DiscountType
+dbo.VT_DLTypes
+dbo.VT_FleetAgreementStatus
+dbo.VT_GarageMaster
+dbo.VT_GroupCompanyList (no values)
+dbo.VT_HistoryTypeMaster
+dbo.VT_Lease_PaymentMode
+dbo.VT_LookupTable
+dbo.VT_Menu
+dbo.VT_Nationality
+dbo.VT_QuotationApprovedBy (no values)
+dbo.VT_QuotationDiscountType
+dbo.VT_QuotationPaymentTerms
+dbo.VT_SmtpDetails
+dbo.VT_StatusMaster
+dbo.VT_StatusTypeMaster
+dbo.VT_SubMenuMaster
+dbo.VT_TyreBrandMaster
+dbo.VT_TyreSupplierMaster
+dbo.VT_UserRights
+dbo.VT_ValidationTemplate
+dbo.VT_Veh_ColourMaster
+dbo.VT_Veh_EngineCapacityMaster
+dbo.VT_Veh_FleetTypeMaster
+dbo.VT_Veh_FuelCapacityUnitMaster
+dbo.VT_Veh_FuelLevelMaster
+dbo.VT_Veh_FuelTypeMaster
+dbo.VT_Veh_InsuranceCompanyMaster
+dbo.VT_Veh_InsurancePolicyMaster
+dbo.VT_Veh_InsuranceTypeMaster
+dbo.VT_Veh_LocationMaster
+dbo.VT_Veh_MakeMaster
+dbo.VT_Veh_ModelMaster
+dbo.VT_Veh_PlateCategoryMaster
+dbo.VT_Veh_PlateCodeMaster
+dbo.VT_Veh_RegNoTypeMaster
+dbo.VT_Veh_ServiceMaster
+dbo.VT_Veh_ServiceMovements
+dbo.VT_Veh_StateMaster
+dbo.VT_Veh_StatusChangeDetails
+dbo.VT_Veh_TariffGroupMaster
+dbo.VT_Veh_TCNoMaster
+dbo.VT_Veh_TransmissionMaster
+dbo.VT_Veh_TypeMaster
+dbo.VT_Veh_VehicleDocuments (no values)
+dbo.VT_Veh_VehicleHistory
+dbo.VT_Veh_VehicleMaster
+dbo.VT_Veh_VehicleMovements
+dbo.VT_Veh_VehicleMovementType
+dbo.VT_Veh_VehicleMovLocMaster
+dbo.VT_Veh_VehicleReplacement
+dbo.VT_VehContractStatusMaster (no values)
+dbo.VT_VehicleBatteryServiceDtls
+dbo.VT_VehicleServiceDetails
+dbo.VT_VehicleServiceHeader
+dbo.VT_VehicleTyreServiceDtls
+dbo.VT_VehicleWheelAlignDtls (no values)
+dbo.VT_VehicleWheelRotationDtls (no values)
+dbo.VT_VisaType

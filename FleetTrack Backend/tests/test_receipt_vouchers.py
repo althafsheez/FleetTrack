@@ -361,7 +361,14 @@ class ReceiptVoucherTests(unittest.TestCase):
             "lines": [{
                 "receiptDetailsId": 10, "ledgerId": 200, "amount": Decimal("100"),
                 "exchangeRateId": 1, "chequeNo": None, "chequeDate": None,
-                "allocations": [],
+                "allocations": [{
+                    "partyBalanceId": 119491,
+                    "referenceType": "against",
+                    "sourceVoucherTypeId": 31,
+                    "sourceVoucherNo": "RI003075",
+                    "contractId": 1776,
+                    "amount": Decimal("100"),
+                }],
             }],
         }
         validate.return_value = validation_result(request)
@@ -388,10 +395,12 @@ class ReceiptVoucherTests(unittest.TestCase):
         }):
             result = service.post_voucher(db, 1)
             posting_calls = repo.insert_posting.call_args_list
+            validated_payload = validate.call_args.args[1]
             repo.update_master.assert_called_once_with(db, 1, {"isPosted": True})
         self.assertEqual(result, response.return_value)
         self.assertEqual(posting_calls[0].args[1]["debit"], Decimal("100.00000"))
         self.assertEqual(posting_calls[1].args[1]["credit"], Decimal("100.00000"))
+        self.assertIsNone(validated_payload.lines[0].allocations[0].contractId)
         db.commit.assert_called_once_with()
 
     @patch.object(service, "_response", return_value={"receiptMasterId": 1})

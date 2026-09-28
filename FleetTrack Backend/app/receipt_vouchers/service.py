@@ -556,7 +556,11 @@ def post_voucher(db, receipt_master_id):
                     "referenceType": allocation["referenceType"],
                     "sourceVoucherTypeId": allocation["sourceVoucherTypeId"],
                     "sourceVoucherNo": allocation["sourceVoucherNo"],
-                    "contractId": allocation["contractId"],
+                    "contractId": (
+                        None
+                        if allocation["referenceType"] == "against"
+                        else allocation["contractId"]
+                    ),
                     "amount": allocation["amount"],
                 } for allocation in line["allocations"]],
             } for line in response["lines"]],

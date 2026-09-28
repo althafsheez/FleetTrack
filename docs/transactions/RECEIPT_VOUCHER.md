@@ -6,9 +6,9 @@ Receipt Voucher records incoming money into a cash, bank, or approved receipt ac
 
 Legacy shortcut: **Receipt Voucher - F6**.
 
-Status: **BACKEND IMPLEMENTED / LIVE WRITES UNVERIFIED**. The Receipt frontend remains missing.
+Status: **BACKEND AND FRONTEND IMPLEMENTED / LIVE POST VERIFIED**.
 
-Implementation update (2026-09-28): `app/receipt_vouchers` now implements the approved FastAPI schemas, repository, service, router, register, lookups, draft lifecycle, posting lifecycle, and print projection with direct SQLAlchemy operations. Twenty-one focused tests and the 53-test Contra/Payment/Receipt suite pass. Read-only MSSQL verified the 3,721-row register, Receipt subtypes, and AED rate; no live Receipt write was performed, and final live detail re-verification was blocked by a subsequent local MSSQL login timeout.
+Implementation update (2026-09-29): `app/receipt_vouchers` implements the approved FastAPI schemas, repository, service, router, register, lookups, draft lifecycle, posting lifecycle, and print projection with direct SQLAlchemy operations. The Next.js Receipt register and create/edit workflow are implemented using the Payment Voucher visual system. Twenty-one focused tests, including a saved Against allocation carrying its source-derived contract, and the 53-test Contra/Payment/Receipt suite pass. Live MSSQL verified the register, Receipt subtypes, AED rate, and one posted Receipt with balanced AED 1,300 ledger totals and one active allocation. Live create, update, unpost, and delete remain unverified.
 
 Evidence inspected read-only on 2026-09-28:
 

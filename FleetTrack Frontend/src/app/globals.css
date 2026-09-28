@@ -2,6 +2,7 @@
 @import "./contract-tariff.css";
 @import "./contra-vouchers.css";
 @import "./payment-vouchers.css";
+@import "./receipt-vouchers.css";
 @import "tailwindcss";
 
 .ft-nav-unavailable{cursor:not-allowed;opacity:.5}.ft-nav-unavailable small{margin-left:auto;padding:2px 5px;border-radius:3px;background:#dbe1ff;color:#00174b;font:10px/12px "JetBrains Mono",monospace}.ft-footer-nav span{display:flex;align-items:center;gap:8px;padding:6px 8px;color:var(--ft-muted);font:500 11px/14px Inter,sans-serif}

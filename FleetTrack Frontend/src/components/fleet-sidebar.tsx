@@ -37,6 +37,7 @@ export function FleetSidebar() {
         <span className="ft-nav-section">Financial Accounts</span>
         <Link className={`ft-nav-link ${pathname.startsWith("/contra-vouchers") ? "ft-nav-active" : ""}`} href="/contra-vouchers"><Icon name="compare_arrows" />Contra Vouchers</Link>
         <Link className={`ft-nav-link ${pathname.startsWith("/payment-vouchers") ? "ft-nav-active" : ""}`} href="/payment-vouchers"><Icon name="payments" />Payment Vouchers</Link>
+        <Link className={`ft-nav-link ${pathname.startsWith("/receipt-vouchers") ? "ft-nav-active" : ""}`} href="/receipt-vouchers"><Icon name="payments" />Receipt Vouchers</Link>
       </nav>
     </div>
     <div className="ft-nav-bottom"><div className="ft-connectivity"><div><span>System state</span><b>[Demo]</b></div><div><span>Integration state</span><b>[Demo]</b></div></div><div className="ft-footer-nav"><span><Icon name="sensors" />System Status</span><span><Icon name="settings" />Settings</span><button type="button"><span>Collapse Menu</span><Icon name="menu_open" /></button></div></div>

@@ -186,6 +186,52 @@ export type PaymentRegisterFilters = {
   amount?: string; partyLedgerId?: number | ""; chequeNo?: string; posted?: boolean | "";
 };
 
+export type ReceiptReferenceType = "against" | "on_account";
+export type ReceiptVoucherType = { id: number; name: string; numberingMethod?: string | null };
+export type ReceiptAccount = { id: number; name: string; accountGroupId?: number | null; accountGroupName?: string | null };
+export type ReceiptDetailAccount = ReceiptAccount & { billByBill: boolean };
+export type ReceiptExchangeRate = PaymentExchangeRate;
+export type ReceiptNumberingRule = ContraNumberingRule;
+export type ReceiptContract = { id: number; contractRefNo: string };
+export type OpenReceiptReference = {
+  ledgerId: number; sourceVoucherTypeId: number; sourceVoucherTypeName?: string | null; sourceVoucherNo: string;
+  sourceInvoiceNo?: string | null; pendingAmount: string | number; exchangeRateId: number; exchangeRate: string | number;
+  currencyId?: number | null; currencyName?: string | null; currencySymbol?: string | null; contractId?: number | null;
+};
+export type ReceiptAllocationInput = {
+  partyBalanceId?: number | null; referenceType: ReceiptReferenceType; sourceVoucherTypeId?: number | null;
+  sourceVoucherNo?: string | null; contractId?: number | null; amount: string;
+};
+export type ReceiptAllocation = ReceiptAllocationInput & {
+  partyBalanceId: number; sourceVoucherTypeName?: string | null; sourceInvoiceNo?: string | null; exchangeRateId: number;
+  exchangeRate: string | number; currencyId?: number | null;
+};
+export type ReceiptVoucherLineInput = {
+  receiptDetailsId?: number | null; ledgerId: number; amount: string; exchangeRateId: number; chequeNo?: string | null;
+  chequeDate?: string | null; allocations: ReceiptAllocationInput[];
+};
+export type ReceiptVoucherPayload = {
+  voucherTypeId: number; voucherDate: string; receivingLedgerId: number; manualVoucherNo?: string | null; narration?: string | null;
+  idempotencyKey?: string | null; lines: ReceiptVoucherLineInput[];
+};
+export type ReceiptVoucherLine = Omit<ReceiptVoucherLineInput, "allocations"> & {
+  receiptDetailsId: number; ledgerName?: string | null; exchangeRate: string | number; currencyId?: number | null;
+  currencyName?: string | null; currencySymbol?: string | null; baseAmount: string | number;
+  billByBill: boolean; allocations: ReceiptAllocation[];
+};
+export type ReceiptVoucherRegisterRow = {
+  receiptMasterId: number; voucherNo: string; invoiceNo: string; voucherTypeId: number; voucherTypeName?: string | null;
+  voucherDate: string; receivingLedgerId: number; receivingLedgerName?: string | null; totalAmount: string | number;
+  narration?: string | null; isPosted: boolean; detailAccountNames?: string[]; lineCount?: number;
+};
+export type ReceiptVoucherResponse = ReceiptVoucherRegisterRow & {
+  suffixPrefixId: number; idempotencyKey?: string | null; userId: number; financialYearId: number; lines: ReceiptVoucherLine[];
+};
+export type ReceiptRegisterFilters = {
+  fromDate?: string; toDate?: string; voucherNo?: string; voucherTypeId?: number | ""; receivingLedgerId?: number | "";
+  amount?: string; partyLedgerId?: number | ""; chequeNo?: string; posted?: boolean | "";
+};
+
 export async function login(username: string, password: string) {
   return request<{ user: AuthenticatedUser }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
 }
@@ -275,3 +321,26 @@ export async function deletePaymentVoucher(id: number) { return request<void>(`/
 export async function postPaymentVoucher(id: number) { return request<PaymentVoucherResponse>(`/payment-vouchers/${id}/post`, { method: "POST" }); }
 export async function unpostPaymentVoucher(id: number) { return request<PaymentVoucherResponse>(`/payment-vouchers/${id}/unpost`, { method: "POST" }); }
 export async function getPaymentPrintData(id: number) { return request<PaymentVoucherResponse>(`/payment-vouchers/${id}/print-data`); }
+
+export async function getReceiptVouchersPage(offset = 0, limit = 25, filters: ReceiptRegisterFilters = {}) {
+  const dates = {
+    fromDate: filters.fromDate ? `${filters.fromDate}T00:00:00` : undefined,
+    toDate: filters.toDate ? `${filters.toDate}T00:00:00` : undefined,
+  };
+  return request<Page<ReceiptVoucherRegisterRow>>(`/receipt-vouchers/page${qs({ offset, limit, ...filters, ...dates })}`);
+}
+export async function getReceiptVoucher(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}`); }
+export async function getReceiptVoucherTypes() { return request<ReceiptVoucherType[]>("/receipt-vouchers/lookups/voucher-types"); }
+export async function getReceiptReceivingAccounts() { return request<ReceiptAccount[]>("/receipt-vouchers/lookups/receiving-accounts"); }
+export async function getReceiptDetailAccounts(search = "", limit = 200) { return request<ReceiptDetailAccount[]>(`/receipt-vouchers/lookups/detail-accounts${qs({ search, limit })}`); }
+export async function getReceiptPartyLedgers(search = "", limit = 200) { return request<ReceiptDetailAccount[]>(`/receipt-vouchers/lookups/party-ledgers${qs({ search, limit })}`); }
+export async function getReceiptExchangeRates(voucherDate: string) { return request<ReceiptExchangeRate[]>(`/receipt-vouchers/lookups/exchange-rates${qs({ date: `${voucherDate}T00:00:00` })}`); }
+export async function getReceiptNumberingRule(voucherTypeId: number, voucherDate: string) { return request<ReceiptNumberingRule>(`/receipt-vouchers/lookups/numbering-rule${qs({ voucherTypeId, date: `${voucherDate}T00:00:00` })}`); }
+export async function getReceiptOpenReferences(ledgerId: number) { return request<OpenReceiptReference[]>(`/receipt-vouchers/party-ledgers/${ledgerId}/open-references`); }
+export async function getReceiptPartyContracts(ledgerId: number) { return request<ReceiptContract[]>(`/receipt-vouchers/party-ledgers/${ledgerId}/contracts`); }
+export async function createReceiptVoucher(payload: ReceiptVoucherPayload) { return request<ReceiptVoucherResponse>("/receipt-vouchers/", { method: "POST", body: JSON.stringify(payload) }); }
+export async function updateReceiptVoucher(id: number, payload: ReceiptVoucherPayload) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}`, { method: "PATCH", body: JSON.stringify(payload) }); }
+export async function deleteReceiptVoucher(id: number) { return request<void>(`/receipt-vouchers/${id}`, { method: "DELETE" }); }
+export async function postReceiptVoucher(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/post`, { method: "POST" }); }
+export async function unpostReceiptVoucher(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/unpost`, { method: "POST" }); }
+export async function getReceiptPrintData(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/print-data`); }

@@ -1,0 +1,41 @@
+SALES INVOICE LOOKUP TRACKER
+Checked: 2026-09-19
+Source of truth: docs/features/SALES_INVOICE_LOOKUPS.md
+
+READY API
+- Invoice types: tbl_VoucherType -> /sales-invoices/lookups/types
+- Customers: tbl_AccountLedger (accountGroupId 26) -> /lookups/customers
+- Salespersons: tbl_Employee -> /lookups/sales-persons
+- Item types: tbl_SalesDetailItemType -> /sales-invoices/lookups/item-types?invoiceType=
+- Units: tbl_Unit -> /sales-invoices/lookups/units
+- Locations: VT_Veh_LocationMaster -> /sales-invoices/lookups/locations
+- Raw taxes: tbl_Tax -> /sales-invoices/lookups/taxes (must become voucher-filtered)
+- Raw exchange rates: tbl_ExchangeRate -> /sales-invoices/lookups/exchange-rates (must include currency)
+
+PRESENT IN DATABASE, API NEEDED OR FIXED
+- Numbering rules: tbl_SuffixPrefix; Rental RI, Salik SA, Fine FN, Misc MS; Vehicle has no rule.
+- Contracts: VT_ContractMaster; filter by selected customer.
+- Contract vehicles: VT_ContractVehicleMaster -> VT_Veh_VehicleMaster; filter by selected contract.
+- Vehicle sale choices: VT_Veh_VehicleMaster; filter to sellable status once Sold status ID is confirmed.
+- Allowed tax: tbl_VoucherTypeTax -> tbl_Tax; one mapping exists for each invoice voucher type.
+- Sales account: tbl_AccountLedger; needs approved invoice-type-to-revenue-account mapping.
+- Currency display: tbl_ExchangeRate.currencyId -> tbl_Currency.
+
+PERSISTED IDs
+- Header: voucherTypeId, suffixPrefixId, ledgerId/customerId, employeeId, salesAccount,
+  exchangeRateId, financialYearId, contractId.
+- Lines: itemTypeId, vehicleId, unitId, taxId.
+- Tax summary: taxId in tbl_SalesBillTax.
+- Location is validated by ID but legacy procedure stores the location name in tbl_SalesMaster.extra1.
+
+CASCADE RULES
+- Type -> item types, allowed taxes, numbering rule, account default, clear lines.
+- Date -> financial year and valid prefix/suffix rule.
+- Customer -> contracts -> vehicles and clear incompatible lines.
+- Contract -> vehicles and future Fine/Salik source charges.
+- Item type -> suggested tax only; server remains authoritative.
+
+IMPORTANT
+- No declared foreign keys exist across the reviewed invoice/lookup/contract tables.
+- Application validation and transactions must enforce the relationships.
+- Current create code passes suffixPrefixId=0: fix before normal Rental/Salik/Fine/Misc invoice use.

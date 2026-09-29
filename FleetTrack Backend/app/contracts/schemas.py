@@ -3,6 +3,20 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+class InitialRentalInvoiceSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    salesAccountId: int = Field(..., gt=0)
+    exchangeRateId: int = Field(..., gt=0)
+    creditPeriod: int = Field(0, ge=0, le=3650)
+    lpoNo: str | None = Field(None, max_length=200)
+
+    @field_validator("lpoNo")
+    @classmethod
+    def trim_lpo_no(cls, value):
+        return value.strip() if value is not None else value
+
+
 class ContractCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -55,7 +69,8 @@ class ContractCreate(BaseModel):
     ConfirmationRefValue: str | None = Field(None, max_length=50)
     Remarks: str | None = None
     CreatedBy: int | None = Field(None, gt=0)
-    IsAdvanceInvoice: bool = True
+    IsAdvanceInvoice: bool | None = None
+    initialRentalInvoice: InitialRentalInvoiceSettings | None = None
 
     @field_validator("UserName", "DrivingLicenseNo", "DLPlaceOfIssue")
     @classmethod
@@ -299,6 +314,8 @@ class ContractResponse(BaseModel):
     ContractUnder: int | None = None
     IsAdvanceInvoice: bool | None = None
     BillingType: int | None = None
+    initialRentalInvoiceId: int | None = None
+    initialRentalInvoiceNo: str | None = None
     CustomerIdNo: str | None = None
     CustomerIdExpiry: datetime | None = None
     driver: ContractDriverResponse

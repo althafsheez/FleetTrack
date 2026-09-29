@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from calendar import monthrange
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from fastapi import HTTPException
 from app.generated_models.models import Base
@@ -15,6 +16,12 @@ CORPORATE_CUSTOMER_TYPE = 10
 INDIVIDUAL_CUSTOMER_TYPE = 11
 CORPORATE_CONFIRMATION_REF = 4
 INDIVIDUAL_CONFIRMATION_REF = 9
+DAILY_CONTRACT_TYPE = 1
+WEEKLY_CONTRACT_TYPE = 2
+MONTHLY_CONTRACT_TYPE = 3
+LEASE_CONTRACT_TYPE = 4
+MONTH_END_BILLING_TYPE = 1
+DATE_TO_DATE_BILLING_TYPE = 2
 
 REFERENCES = {
     "ContractType": ("tbl_VehicleContractType", "contractType"),
@@ -63,6 +70,49 @@ def _customer_id_expiry(customer):
     return customer["CustomerIdExpiry"] or LEGACY_DATE
 
 
+def _add_month(value):
+    month = value.month + 1
+    year = value.year
+    if month == 13:
+        month = 1
+        year += 1
+    return value.replace(year=year, month=month, day=min(value.day, monthrange(year, month)[1]))
+
+
+def _first_day_next_month(value):
+    next_month = _add_month(value)
+    return next_month.replace(day=1)
+
+
+def _billing_values(payload):
+    contract_type = payload.ContractType
+    if contract_type not in {DAILY_CONTRACT_TYPE, WEEKLY_CONTRACT_TYPE, MONTHLY_CONTRACT_TYPE, LEASE_CONTRACT_TYPE}:
+        raise HTTPException(422, "ContractType is not supported for rental billing")
+    if payload.BillingType not in {MONTH_END_BILLING_TYPE, DATE_TO_DATE_BILLING_TYPE}:
+        raise HTTPException(422, "BillingType is not supported for rental billing")
+
+    if contract_type in {DAILY_CONTRACT_TYPE, WEEKLY_CONTRACT_TYPE} and payload.IsAdvanceInvoice is True:
+        raise HTTPException(422, "Advance Rental Invoice is supported only for Monthly and Lease contracts")
+
+    payment_type = MONTHLY_CONTRACT_TYPE if contract_type == LEASE_CONTRACT_TYPE else contract_type
+    is_advance = contract_type in {MONTHLY_CONTRACT_TYPE, LEASE_CONTRACT_TYPE} and payload.IsAdvanceInvoice is not False
+    if is_advance and payload.initialRentalInvoice is None:
+        raise HTTPException(422, "initialRentalInvoice is required for an advance Monthly or Lease contract")
+    if is_advance and payload.CreatedBy is None:
+        raise HTTPException(422, "CreatedBy is required for an advance Monthly or Lease contract")
+
+    if contract_type == DAILY_CONTRACT_TYPE:
+        return payment_type, False, None, None
+    if contract_type == WEEKLY_CONTRACT_TYPE:
+        return payment_type, False, payload.ContractStartDate + timedelta(days=7), payload.ContractStartDate
+    if is_advance:
+        return payment_type, True, payload.ContractStartDate, None
+    next_invoice_date = _add_month(payload.ContractStartDate)
+    if payload.BillingType == MONTH_END_BILLING_TYPE:
+        next_invoice_date = _first_day_next_month(payload.ContractStartDate)
+    return payment_type, False, next_invoice_date, payload.ContractStartDate
+
+
 def _validate_references(db, payload):
     for field, (table, key) in REFERENCES.items():
         value = getattr(payload, field, None)
@@ -84,6 +134,7 @@ def _contract_values(payload, customer, now):
     email = payload.Email if payload.Email is not None else _text(customer["email"])
     fax = payload.Fax if payload.Fax is not None else "0"
     created_by = payload.CreatedBy
+    payment_type, is_advance, next_invoice_date, last_invoice_date = _billing_values(payload)
 
     return {
         "RTACode": ref_no,
@@ -111,7 +162,7 @@ def _contract_values(payload, customer, now):
         "DLPlaceOfIssue": payload.DLPlaceOfIssue,
         "DLIssueDate": payload.DLIssueDate,
         "DLExpiryDate": payload.DLExpiryDate,
-        "PaymentType": payload.ContractType,
+        "PaymentType": payment_type,
         "Rate": payload.Rate,
         "DriverCharges": payload.DriverCharges,
         "AddDriverCharges": payload.AddDriverCharges,
@@ -151,7 +202,9 @@ def _contract_values(payload, customer, now):
         "CustomerType": customer_type,
         "ConfirmationRefType": _confirmation_ref_type(customer_type),
         "ConfirmationRefValue": payload.ConfirmationRefValue,
-        "IsAdvanceInvoice": payload.IsAdvanceInvoice,
+        "NextInvStDate": next_invoice_date,
+        "LastInvoiceDate": last_invoice_date,
+        "IsAdvanceInvoice": is_advance,
         "BillingType": payload.BillingType,
     }
 
@@ -191,12 +244,15 @@ def _vehicle_values(payload):
     }
 
 
-def _response(contract, driver, vehicle_assignment, customer):
+def _response(contract, driver, vehicle_assignment, customer, initial_invoice=None):
     values = dict(contract)
     values["driver"] = dict(driver)
     values["vehicle_assignment"] = dict(vehicle_assignment)
     values["CustomerIdNo"] = customer["CustomerIdNo"]
     values["CustomerIdExpiry"] = customer["CustomerIdExpiry"]
+    if initial_invoice is not None:
+        values["initialRentalInvoiceId"] = initial_invoice["salesMasterId"]
+        values["initialRentalInvoiceNo"] = initial_invoice["invoiceNo"]
     return values
 
 
@@ -218,11 +274,27 @@ def create_contract(db, payload):
             _driver_values(payload, customer),
             _vehicle_values(payload),
         )
+        initial_invoice = None
+        if payload.ContractType in {MONTHLY_CONTRACT_TYPE, LEASE_CONTRACT_TYPE} and payload.IsAdvanceInvoice is not False:
+            from app.rental_billing import service as rental_billing_service
+
+            try:
+                initial_invoice = rental_billing_service.create_initial_invoice(
+                    db,
+                    contract_id,
+                    payload.initialRentalInvoice,
+                    payload.CreatedBy,
+                )
+            except HTTPException:
+                # Invoice validation failures occur after the contract rows exist.
+                # Roll back the shared request transaction so creation stays atomic.
+                db.rollback()
+                raise
         contract = repo.get_contract(db, contract_id)
         driver = repo.get_driver(db, contract_id)
         vehicle_assignment = repo.get_vehicle_assignment(db, contract_id)
         db.commit()
-        return _response(contract, driver, vehicle_assignment, customer)
+        return _response(contract, driver, vehicle_assignment, customer, initial_invoice)
 
 
 def _money(value):
@@ -444,6 +516,12 @@ def update_contract(db, contract_id, payload):
         contract = repo.get_contract(db, contract_id)
         if contract is None:
             raise HTTPException(404, "Contract not found")
+        billing_locked_fields = {
+            "ContractType", "ContractStartDate", "BillingType", "Rate", "Discount", "DiscountType",
+            "DriverCharges", "AddDriverCharges", "CDW", "PAI", "IsAdvanceInvoice",
+        }
+        if repo.has_rental_invoice(db, contract_id) and billing_locked_fields.intersection(values):
+            raise HTTPException(409, "Billing terms cannot be changed after a Rental Invoice exists")
         _validate_contract_update_references(db, values)
 
         start_date = values.get("ContractStartDate", contract["ContractStartDate"])
@@ -457,7 +535,10 @@ def update_contract(db, contract_id, payload):
         header_values["UpdatedBy"] = values["UpdatedBy"]
         header_values["UpdatedDate"] = now
         if "ContractType" in header_values:
-            header_values["PaymentType"] = header_values["ContractType"]
+            contract_type = header_values["ContractType"]
+            if contract_type not in {DAILY_CONTRACT_TYPE, WEEKLY_CONTRACT_TYPE, MONTHLY_CONTRACT_TYPE, LEASE_CONTRACT_TYPE}:
+                raise HTTPException(422, "ContractType is not supported for rental billing")
+            header_values["PaymentType"] = MONTHLY_CONTRACT_TYPE if contract_type == LEASE_CONTRACT_TYPE else contract_type
         repo.update_contract(db, contract_id, header_values)
 
         driver = repo.get_driver(db, contract_id)

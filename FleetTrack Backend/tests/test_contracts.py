@@ -3,6 +3,8 @@ import unittest
 from datetime import datetime
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import patch
+from fastapi import HTTPException
 from pypdf import PdfReader
 from sqlalchemy import (
     BigInteger,
@@ -247,6 +249,49 @@ class ContractAPI(unittest.TestCase):
             contract_service.create_contract(self.db, ContractCreate(**self._payload(CustomerId=999)))
         with self.assertRaisesRegex(Exception, "PaymentMode"):
             contract_service.create_contract(self.db, ContractCreate(**self._payload(PaymentMode=99)))
+
+    @patch("app.rental_billing.service.create_initial_invoice")
+    def test_monthly_advance_creates_first_invoice_and_uses_monthly_payment_type(self, create_initial_invoice):
+        self._insert_required("tbl_VehicleContractType", contractType=3, contractTypeName="Monthly", contractTypeCode="MON")
+        create_initial_invoice.return_value = {"salesMasterId": 91, "invoiceNo": "RI000091"}
+        body = contract_service.create_contract(
+            self.db,
+            ContractCreate(**self._payload(
+                ContractType=3,
+                initialRentalInvoice={"salesAccountId": 50, "exchangeRateId": 1},
+            )),
+        )
+
+        self.assertEqual(body["PaymentType"], 3)
+        self.assertTrue(body["IsAdvanceInvoice"])
+        self.assertEqual(body["NextInvStDate"], datetime(2026, 9, 5))
+        self.assertEqual(body["initialRentalInvoiceId"], 91)
+        self.assertEqual(body["initialRentalInvoiceNo"], "RI000091")
+        create_initial_invoice.assert_called_once()
+
+    def test_daily_and_weekly_reject_advance_invoice(self):
+        with self.assertRaisesRegex(Exception, "Advance Rental Invoice"):
+            contract_service.create_contract(self.db, ContractCreate(**self._payload(IsAdvanceInvoice=True)))
+        self._insert_required("tbl_VehicleContractType", contractType=2, contractTypeName="Weekly", contractTypeCode="WKL")
+        with self.assertRaisesRegex(Exception, "Advance Rental Invoice"):
+            contract_service.create_contract(self.db, ContractCreate(**self._payload(ContractType=2, IsAdvanceInvoice=True)))
+
+    @patch("app.rental_billing.service.create_initial_invoice")
+    def test_monthly_invoice_validation_failure_rolls_back_contract_rows(self, create_initial_invoice):
+        self._insert_required("tbl_VehicleContractType", contractType=3, contractTypeName="Monthly", contractTypeCode="MON")
+        create_initial_invoice.side_effect = HTTPException(422, "Rental Invoice settings are invalid")
+
+        with self.assertRaises(HTTPException):
+            contract_service.create_contract(
+                self.db,
+                ContractCreate(**self._payload(
+                    ContractType=3,
+                    initialRentalInvoice={"salesAccountId": 50, "exchangeRateId": 1},
+                )),
+            )
+
+        count = self.db.execute(select(contracts.CONTRACT_TABLE.c.ContractId)).all()
+        self.assertEqual(count, [])
 
     def test_contract_lookup_endpoints(self):
         contract_service.create_contract(self.db, ContractCreate(**self._payload()))

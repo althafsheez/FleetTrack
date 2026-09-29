@@ -1,0 +1,1 @@
+"""Contra Voucher backend module."""

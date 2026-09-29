@@ -6,6 +6,8 @@ FleetTrack's existing README describes a fleet and business management ERP for v
 
 Demonstrate a coherent customer → vehicle → tariff → contract → checkout → active rental → fines/Salik when applicable → check-in → invoice → receipt workflow using the existing MSSQL data, plus Sales Invoice and Receipt Registers. Extend the existing code quickly and preserve working functionality.
 
+Current working direction: continue implementation as production-bound code on the `prod` branch. Keep MVP speed and demo focus, but treat new work as code that should be safe to keep, verify, and harden rather than disposable prototype work.
+
 ## Current implementation
 
 The repository contains a Python FastAPI backend, SQLAlchemy generated mappings, Pydantic schemas, and pyodbc connection code. Customers, suppliers, and vehicle lookups are registered. Vehicles now have CRUD/search APIs; tariff-group name CRUD and rate read/initialize/update APIs are also implemented. Contract Agreement Add now has a backend create endpoint that writes contract header, driver snapshot, and vehicle assignment rows. Later transaction stages and a frontend are not implemented in the inspected repository. Live read-only Vehicle/Tariff/Contract lookup checks passed, alongside isolated regression tests. Live MSSQL writes remain unverified.
@@ -22,8 +24,9 @@ The existing MSSQL database is authoritative. Current code targets database `Bal
 
 ## Constraints and unknowns
 
-- Work on existing branch `mvp`; do not create a repository or rebuild the app.
+- Work on existing branch `prod` for production-bound implementation unless the user explicitly chooses a different checkpoint/branch. Do not create a repository or rebuild the app.
 - Preserve working code; generated models and database schema are read-only for this task.
+- Database structure and configuration are immutable: do not add, alter, rename, or delete database tables, columns, indexes, constraints, views, triggers, functions, or stored procedures. Do not alter lookup, master, or reference data. Application features may write only the existing transactional business records required by an approved user action, such as creating a contract, invoice, receipt, check-in, or closing a contract.
 - The user approved Vehicle/Tariff backend implementation; no commits or pushes were requested.
 - Model declarations are evidence of the generated snapshot, not proof of current live schema or working business flows.
 - Three Vehicle reference screenshots are now documented in `REFERENCE_APP.md`. Delivery date, approved demo records, other reference screens, precise pricing/status/accounting rules, and deployment environment remain UNKNOWN.

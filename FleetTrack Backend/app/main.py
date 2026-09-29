@@ -13,6 +13,11 @@ from app.lookups.router import router as lookups_router
 from app.suppliers.router import router as suppliers_router
 from app.tariffs.router import router as tariffs_router
 from app.vehicles.router import router as vehicles_router
+from app.sales_invoices.router import router as sales_invoices_router
+from app.rental_billing.router import router as rental_billing_router
+from app.contra_vouchers.router import router as contra_vouchers_router
+from app.payment_vouchers.router import router as payment_vouchers_router
+from app.receipt_vouchers.router import router as receipt_vouchers_router
 
 app = FastAPI(
     title="FleetTrack Backend API",
@@ -70,3 +75,8 @@ app.include_router(lookups_router, dependencies=authenticated)
 app.include_router(vehicles_router, dependencies=authenticated)
 app.include_router(tariffs_router, dependencies=authenticated)
 app.include_router(contracts_router, dependencies=authenticated)
+app.include_router(sales_invoices_router, dependencies=authenticated)
+app.include_router(rental_billing_router, dependencies=authenticated)
+app.include_router(contra_vouchers_router, dependencies=authenticated)
+app.include_router(payment_vouchers_router, dependencies=authenticated)
+app.include_router(receipt_vouchers_router, dependencies=authenticated)

@@ -19,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: "include",
@@ -63,7 +63,14 @@ export type Page<T> = { items: T[]; total: number; offset: number; limit: number
 export type CustomerRecord = LookupRecord & {
   ledgerId: number; ledgerName: string; ledgerNameInArabic?: string | null; mobile?: string | null; email?: string | null;
   emirateId?: number | null; CustomerIdNo?: string | null; CustomerIdExpiry?: string | null; creditLimit?: number | string | null; isCorporate?: boolean | null;
+  mailingName?: string | null; phone?: string | null; address?: string | null; tin?: string | null;
+  Nationality?: string | null; crOrDr?: string | null; billByBill?: boolean | null;
+  bankAccountNumber?: string | null; branchName?: string | null; branchCode?: string | null; narration?: string | null;
 };
+
+export function getContractPrintPdfUrl(contractId: number, assignmentId: number) {
+  return `${API_BASE}/contracts/${contractId}/print.pdf${qs({ assignmentId })}`;
+}
 export type CustomerPayload = Record<string, string | number | boolean | null>;
 
 export type VehicleRecord = LookupRecord & {

@@ -1,5 +1,13 @@
 # Current state audit
 
+## Latest implementation - Screenshot transaction migration
+
+User decision: credit-note and inventory posting are explicitly deferred for now; retain the guards while allowing their implemented draft/register workflows.
+
+Nine transaction/register routes are now integrated: bank reconciliation, purchase orders, purchase invoices, sales quotations, invoice credit notes, debit notes, traffic fines, vehicle finance, and the sales invoice register. The authenticated backend uses the existing SQLAlchemy mappings; the frontend follows the existing sidebar/register/editor structure. See [TRANSACTION_MIGRATION.md](transactions/TRANSACTION_MIGRATION.md) for the capability matrix, evidence, verification, and explicit parity gaps.
+
+Verification: 85 focused transaction/voucher tests passed; TypeScript, targeted ESLint and the production frontend build passed; desktop/mobile mock-data checks passed for all nine routes, including a purchase-order save/reopen flow. Live database read queries passed. The earlier full backend discovery had 12 existing vehicle/tariff authentication-fixture failures out of 120 tests. No live business writes were performed. Deeper database inspection resolved discount and fixed-asset posting: both are implemented with depreciation-schedule and downstream-reference guards. Credit-note, inventory and foreign-currency posting remain blocked. Sales-register Excel XML/PDF exports and editor print-after-save are implemented; exact letterhead/signature templates and combined invoice printing remain incomplete. This delivery is not full legacy parity or production acceptance.
+
 ## Latest implementation — PDC Payable, Receivable, and Clearance
 
 Three authenticated API families now implement the PDC workflow: `/pdc-payables`, `/pdc-receivables`, and `/pdc-clearances`. Payable and Receivable provide paginated registers, detail/print projections, all-account search, bank/reference/numbering lookups, and atomic create/update/delete operations. A new PDC is Against-only: its visible Account Ledger is the PDC-side ledger, while the nested Against window selects a party and one or more open references. Allocation totals must equal the cheque amount and are saved to `tbl_PartyBalance`; On Account is not offered. Save creates balanced ledger postings and the selected Against effects because the PDC tables have no draft/posted state.

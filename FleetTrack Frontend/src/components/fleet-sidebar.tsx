@@ -41,6 +41,13 @@ export function FleetSidebar() {
         <Link className={`ft-nav-link ${pathname.startsWith("/pdc-payables") ? "ft-nav-active" : ""}`} href="/pdc-payables"><Icon name="description" />PDC Payables</Link>
         <Link className={`ft-nav-link ${pathname.startsWith("/pdc-receivables") ? "ft-nav-active" : ""}`} href="/pdc-receivables"><Icon name="description" />PDC Receivables</Link>
         <Link className={`ft-nav-link ${pathname.startsWith("/pdc-clearances") ? "ft-nav-active" : ""}`} href="/pdc-clearances"><Icon name="compare_arrows" />PDC Clearance</Link>
+        {[
+          ['/bank-reconciliations', 'Bank Reconciliation'], ['/purchase-orders', 'Purchase Orders'],
+          ['/purchase-invoices', 'Purchase Invoices'], ['/sales-quotations', 'Sales Quotations'],
+          ['/credit-notes', 'Credit Notes (Invoice)'], ['/debit-notes', 'Debit Notes'],
+          ['/vehicle-finance', 'Vehicle Finance'], ['/traffic-fines', 'Traffic Fines'],
+          ['/sales-invoice-register', 'Sales Invoice Register'],
+        ].map(([href, label]) => <Link className={`ft-nav-link ${pathname === href ? 'ft-nav-active' : ''}`} href={href} key={href}><Icon name="description" />{label}</Link>)}
       </nav>
     </div>
     <div className="ft-nav-bottom"><div className="ft-connectivity"><div><span>System state</span><b>[Demo]</b></div><div><span>Integration state</span><b>[Demo]</b></div></div><div className="ft-footer-nav"><span><Icon name="sensors" />System Status</span><span><Icon name="settings" />Settings</span><button type="button"><span>Collapse Menu</span><Icon name="menu_open" /></button></div></div>

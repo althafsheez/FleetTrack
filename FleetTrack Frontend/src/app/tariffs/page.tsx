@@ -36,6 +36,7 @@ export default function TariffsPage() {
 
   async function load(search = query, preferred?: number, resetPage = false) {
     setLoading(true);
+    setError(null);
     try {
       const rows = await getTariffGroups(search);
       setGroups(rows);

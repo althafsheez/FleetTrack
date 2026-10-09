@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// Browser requests stay same-origin so the FleetTrack session cookie is always forwarded by Next's API proxy.
+const API_BASE = "/api";
 
 type QueryValue = string | number | boolean | null | undefined;
 
@@ -232,6 +233,21 @@ export type ReceiptRegisterFilters = {
   amount?: string; partyLedgerId?: number | ""; chequeNo?: string; posted?: boolean | "";
 };
 
+export type PDCSourceType = "payable" | "receivable";
+export type PDCStatus = "Pending" | "Cleared" | "Bounced";
+export type PDCLookup = { id: number; name: string; accountGroupName?: string | null };
+export type PDCNumberingRule = { voucherTypeId: number; numberingMethod: string; automatic: boolean; nextVoucherNo?: string | null; nextInvoiceNo?: string | null };
+export type PDCOpenReference = { ledgerId: number; sourceVoucherTypeId: number; sourceVoucherTypeName?: string | null; sourceVoucherNo: string; sourceInvoiceNo?: string | null; pendingAmount: string | number; currencySymbol?: string | null };
+export type PDCAllocationInput = { ledgerId: number; sourceVoucherTypeId: number; sourceVoucherNo: string; amount: string };
+export type PDCAllocation = PDCAllocationInput & { ledgerName?: string | null; sourceVoucherTypeName?: string | null; sourceInvoiceNo?: string | null };
+export type PDCVoucherPayload = { voucherDate: string; controlLedgerId: number; partyLedgerId: number; bankLedgerId: number; amount: string; chequeNo: string; chequeDate: string; manualVoucherNo?: string | null; narration?: string | null; idempotencyKey?: string | null; allocations?: PDCAllocationInput[] };
+export type PDCVoucherRegisterRow = { id: number; sourceType: PDCSourceType; invoiceNo: string; voucherTypeId: number; voucherTypeName: string; voucherDate: string; controlLedgerId: number; controlLedgerName?: string | null; partyLedgerId?: number | null; partyLedgerName?: string | null; bankLedgerId: number; bankLedgerName?: string | null; amount: string | number; chequeNo: string; chequeDate: string; narration?: string | null; status: PDCStatus };
+export type PDCVoucherResponse = PDCVoucherRegisterRow & { voucherNo: string; financialYearId: number; idempotencyKey?: string | null; allocations: PDCAllocation[] };
+export type PDCRegisterFilters = { fromDate?: string; toDate?: string; voucherNo?: string; ledgerId?: number | ""; bankId?: number | ""; amount?: string; chequeNo?: string; status?: string };
+export type PDCClearancePayload = { clearanceDate: string; status: "Cleared" | "Bounced"; narration?: string | null; idempotencyKey?: string | null };
+export type PDCClearance = { id: number; voucherNo: string; invoiceNo: string; voucherTypeId: number; clearanceDate: string; sourceType: PDCSourceType; sourceId: number; sourceInvoiceNo: string; controlLedgerId: number; controlLedgerName?: string | null; partyLedgerId?: number | null; partyLedgerName?: string | null; bankLedgerId: number; bankLedgerName?: string | null; amount: string | number; chequeNo: string; chequeDate: string; status: "Cleared" | "Bounced"; narration?: string | null; financialYearId: number; idempotencyKey?: string | null };
+export type PDCClearanceFilters = { fromDate?: string; toDate?: string; sourceType?: PDCSourceType | ""; ledgerId?: number | ""; bankId?: number | ""; status?: string; chequeNo?: string };
+
 export async function login(username: string, password: string) {
   return request<{ user: AuthenticatedUser }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
 }
@@ -344,3 +360,24 @@ export async function deleteReceiptVoucher(id: number) { return request<void>(`/
 export async function postReceiptVoucher(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/post`, { method: "POST" }); }
 export async function unpostReceiptVoucher(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/unpost`, { method: "POST" }); }
 export async function getReceiptPrintData(id: number) { return request<ReceiptVoucherResponse>(`/receipt-vouchers/${id}/print-data`); }
+
+function pdcBase(kind: PDCSourceType) { return kind === "payable" ? "/pdc-payables" : "/pdc-receivables"; }
+export async function getPDCVouchersPage(kind: PDCSourceType, offset = 0, limit = 25, filters: PDCRegisterFilters = {}) { return request<Page<PDCVoucherRegisterRow>>(`${pdcBase(kind)}/page${qs({ offset, limit, ...filters })}`); }
+export async function getPDCVoucher(kind: PDCSourceType, id: number) { return request<PDCVoucherResponse>(`${pdcBase(kind)}/${id}`); }
+export async function getPDCLookups(kind: PDCSourceType, role: "accounts" | "control-accounts" | "banks" | "party-ledgers", search = "") { return request<PDCLookup[]>(`${pdcBase(kind)}/lookups/${role}${qs({ search, limit: 200 })}`); }
+export async function getPDCNumberingRule(kind: PDCSourceType, date: string) { return request<PDCNumberingRule>(`${pdcBase(kind)}/lookups/numbering-rule${qs({ date: `${date}T00:00:00` })}`); }
+export async function getPDCOpenReferences(kind: PDCSourceType, ledgerId: number) { return request<PDCOpenReference[]>(`${pdcBase(kind)}/lookups/open-references${qs({ ledgerId })}`); }
+export async function createPDCVoucher(kind: PDCSourceType, payload: PDCVoucherPayload) { return request<PDCVoucherResponse>(`${pdcBase(kind)}/`, { method: "POST", body: JSON.stringify(payload) }); }
+export async function updatePDCVoucher(kind: PDCSourceType, id: number, payload: PDCVoucherPayload) { return request<PDCVoucherResponse>(`${pdcBase(kind)}/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
+export async function deletePDCVoucher(kind: PDCSourceType, id: number) { return request<void>(`${pdcBase(kind)}/${id}`, { method: "DELETE" }); }
+export async function getPDCPrintData(kind: PDCSourceType, id: number) { return request<PDCVoucherResponse>(`${pdcBase(kind)}/${id}/print-data`); }
+export async function getPDCClearancesPage(offset = 0, limit = 25, filters: PDCClearanceFilters = {}) {
+  const page = await request<Page<PDCClearance>>(`/pdc-clearances/page${qs({ offset, limit, ...filters })}`);
+  return { ...page, items: page.items.map((item) => ({ ...item, controlLedgerName: item.partyLedgerName || item.controlLedgerName })) };
+}
+export async function getPendingPDCInstruments(sourceType: PDCSourceType) { return request<PDCVoucherRegisterRow[]>(`/pdc-clearances/lookups/pending-instruments${qs({ sourceType, limit: 100 })}`); }
+export async function createPDCClearance(sourceType: PDCSourceType, sourceId: number, payload: PDCClearancePayload) { return request<PDCClearance>(`/pdc-clearances/${sourceType}/${sourceId}`, { method: "POST", body: JSON.stringify(payload) }); }
+export async function getPDCClearance(id: number) { const item = await request<PDCClearance>(`/pdc-clearances/${id}`); return { ...item, controlLedgerName: item.partyLedgerName || item.controlLedgerName }; }
+export async function updatePDCClearance(id: number, payload: PDCClearancePayload) { return request<PDCClearance>(`/pdc-clearances/${id}`, { method: "PUT", body: JSON.stringify(payload) }); }
+export async function deletePDCClearance(id: number) { return request<void>(`/pdc-clearances/${id}`, { method: "DELETE" }); }
+export async function getPDCClearancePrintData(id: number) { const item = await request<PDCClearance>(`/pdc-clearances/${id}/print-data`); return { ...item, controlLedgerName: item.partyLedgerName || item.controlLedgerName }; }

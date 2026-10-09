@@ -4,7 +4,9 @@
 
 Transitions a registered payable or receivable post-dated cheque into its bank-cleared or other terminal/intermediate state. The menu shows **PDC Clearance** with no shortcut observed. No current module or screen capture exists.
 
-Status: **MISSING**.
+Status: **BACKEND IMPLEMENTED; FRONTEND PENDING**.
+
+Current `/pdc-clearances` APIs expose Pending source selection, `Cleared`/`Bounced` statuses, register/detail/print, and atomic create/update/delete. Cleared Payable debits control and credits bank; Cleared Receivable debits bank and credits control. Bounced is status-only and intentionally does not post or reopen allocations.
 
 ## Candidate UI and lifecycle
 
@@ -27,7 +29,7 @@ select payable/receivable type -> list eligible pending instruments
 
 ## Procedures and target code flow
 
-Clearance add/delete/post/unpost/status procedures are `UNKNOWN`. Target `/pdc-clearances` service must lock the source instrument, validate its current lifecycle, persist the event and all accounting/allocation effects atomically, then return the resulting source status.
+Live inspection confirmed clearance add/edit/delete/fill/register/report/print procedures and 84 existing Cleared Payable records. The new service locks the source and numbering scope and performs the full operation atomically instead of calling the split legacy procedures.
 
 ## Safety rules
 

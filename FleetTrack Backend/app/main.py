@@ -18,10 +18,13 @@ from app.rental_billing.router import router as rental_billing_router
 from app.contra_vouchers.router import router as contra_vouchers_router
 from app.payment_vouchers.router import router as payment_vouchers_router
 from app.receipt_vouchers.router import router as receipt_vouchers_router
+from app.pdc_payables.router import router as pdc_payables_router
+from app.pdc_receivables.router import router as pdc_receivables_router
+from app.pdc_clearances.router import router as pdc_clearances_router
 app = FastAPI( title = "FleetTrack Backend API", description = "API for FleetTrack Backend", version = "1.0.0" )
 
 
-# Explicit development origins; configure a comma-separated list for other frontends.
+# Explicit d    evelopment origins; configure a comma-separated list for other frontends.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in os.getenv(
@@ -53,3 +56,6 @@ app.include_router(rental_billing_router, dependencies=authenticated)
 app.include_router(contra_vouchers_router, dependencies=authenticated)
 app.include_router(payment_vouchers_router, dependencies=authenticated)
 app.include_router(receipt_vouchers_router, dependencies=authenticated)
+app.include_router(pdc_payables_router, dependencies=authenticated)
+app.include_router(pdc_receivables_router, dependencies=authenticated)
+app.include_router(pdc_clearances_router, dependencies=authenticated)

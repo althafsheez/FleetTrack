@@ -4,7 +4,9 @@
 
 Registers a post-dated cheque issued by the business for future payment. The menu shows **PDC Payable - Alt+P**. No current module or screen capture exists.
 
-Status: **MISSING**.
+Status: **BACKEND AND FRONTEND IMPLEMENTED**.
+
+Current `/pdc-payables` APIs provide register/detail/print, all-account lookup and search, open-reference lookup, and atomic create/update/delete. The visible Account Ledger is unrestricted. Every new PDC currently requires one or more Against references chosen in the nested allocation window; they must belong to one party account and exactly equal the cheque amount. Save creates balanced ledger postings and `tbl_PartyBalance` Against rows. On Account creation is intentionally deferred. Clearance is handled by `/pdc-clearances`.
 
 ## Candidate UI and lifecycle
 
@@ -27,14 +29,14 @@ No generated FKs enforce these joins or prevent duplicate cheque numbers.
 
 ## Procedures and target code flow
 
-PDC Payable add/edit/delete/post/register and clearance procedures are `UNKNOWN`. Target `/pdc-payables` module should expose register/detail/draft commands and lifecycle actions only after the posting point and statuses are proven.
+Live inspection confirmed the legacy add/edit/delete/register/report/print/reference procedures. They remain evidence rather than application calls because the add procedure inserts only the master and does not atomically create postings and allocations.
 
 ## Safety rules
 
-- Validate verified bank and payee/control ledgers.
+- Validate existing Account Ledger, Against party ledger, bank ledger, and the exact source references.
 - Define cheque-number uniqueness scope: bank/account/date/status.
 - Prevent a single instrument from being cleared twice or cleared after cancellation.
-- Registration, party allocation, and later clearance must preserve one stable instrument ID.
+- Registration, Against allocation, and later clearance preserve one stable instrument ID.
 - Unpost/delete must reject cleared instruments and reverse all earlier effects atomically where supported.
 
 ## Implementation and tests

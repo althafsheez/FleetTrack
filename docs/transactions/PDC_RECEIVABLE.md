@@ -4,7 +4,9 @@
 
 Registers a post-dated cheque received from a customer or other party for future collection. The menu shows **PDC Receivable - Alt+R**. No current module or screen capture exists.
 
-Status: **MISSING**.
+Status: **BACKEND IMPLEMENTED; FRONTEND PENDING; LIVE WRITE UNVERIFIED**.
+
+Current `/pdc-receivables` APIs mirror Payable with Against-only allocation. Save debits the selected PDC-side Account Ledger and credits allocated customer references. The live database contains no Receivable rows, so controlled live write verification remains pending.
 
 ## Candidate UI and lifecycle
 
@@ -27,7 +29,7 @@ No generated FKs or visible unique cheque constraint establish these relationshi
 
 ## Procedures and target code flow
 
-All PDC Receivable procedures are `UNKNOWN`. Target `/pdc-receivables` module must preserve instrument identity and integrate with Receipt/open-item logic only where legacy behavior proves it.
+Live inspection confirmed add/edit/delete/register/report/print/reference procedures. The service does not call them because they do not coordinate the complete accounting transaction and one legacy cleared/bounced report branch compares incompatible voucher-type IDs.
 
 ## Safety rules
 

@@ -18,7 +18,7 @@ def reconciliation_entries(db, bank_id, start, end, status, offset, limit):
     start, end = period(start, end)
     rows, total = r.entries(db, bank_id, start, end, status, offset, limit)
     return dict(items=rows, total=total, offset=offset, limit=limit, bookBalance=r.book_balance(db, account, end))
-
+``
 
 def save_reconciliation(db, payload):
     if len({line.ledgerPostingId for line in payload.lines}) != len(payload.lines):

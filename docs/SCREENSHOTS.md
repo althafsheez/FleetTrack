@@ -1,32 +1,22 @@
 # Screenshots
 
-Reference screenshots are stored under:
+Current public-ready screenshots are stored under:
 
 ```text
-reference/screenshots/
+reference/screenshots/current/
 ```
 
-## Vehicle Screens
+The captures exclude desktop and browser chrome. Customer records and vehicle identifiers are intentionally redacted before publication.
 
-![Vehicle master](../reference/screenshots/vehicle/vehicle-master.png)
+## Current FleetTrack Screens
 
-![Vehicle tariff group](../reference/screenshots/vehicle/vehicle-tariff-group.png)
+![FleetTrack sign-in](../reference/screenshots/current/fleettrack-login.png)
 
-![Vehicle group tariff](../reference/screenshots/vehicle/vehicle-group-tariff.png)
+![FleetTrack customer register, redacted](../reference/screenshots/current/fleettrack-customers-redacted.png)
 
-## Transaction Screens
+![FleetTrack vehicle register, redacted](../reference/screenshots/current/fleettrack-vehicles-redacted.png)
 
-![Payment voucher](../reference/screenshots/transactions/payment-voucher.png)
-
-![Payment voucher party balance](../reference/screenshots/transactions/payment-voucher-party-balance.png)
-
-![Receipt voucher](../reference/screenshots/transactions/receipt-voucher.png)
-
-![Receipt voucher party balance](../reference/screenshots/transactions/receipt-voucher-party-balance.png)
-
-![Receipt register](../reference/screenshots/transactions/receipt-register.png)
-
-![Contra voucher](../reference/screenshots/transactions/contra-voucher.png)
+![FleetTrack tariff groups](../reference/screenshots/current/fleettrack-tariffs.png)
 
 ## Screenshot Guidance
 

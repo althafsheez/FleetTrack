@@ -6,15 +6,15 @@ The project is intentionally practical: it preserves the legacy database schema,
 
 ## Screenshots
 
-| Vehicles | Tariff Groups | Payment Voucher |
+| Sign in | Customers | Vehicles |
 | --- | --- | --- |
-| ![Vehicle master](reference/screenshots/vehicle/vehicle-master.png) | ![Vehicle tariff group](reference/screenshots/vehicle/vehicle-tariff-group.png) | ![Payment voucher](reference/screenshots/transactions/payment-voucher.png) |
+| ![FleetTrack sign-in screen](reference/screenshots/current/fleettrack-login.png) | ![FleetTrack customer register with records redacted](reference/screenshots/current/fleettrack-customers-redacted.png) | ![FleetTrack vehicle register with identifiers redacted](reference/screenshots/current/fleettrack-vehicles-redacted.png) |
 
-| Receipt Voucher | Contra Voucher | Payment Allocation |
-| --- | --- | --- |
-| ![Receipt voucher](reference/screenshots/transactions/receipt-voucher.png) | ![Contra voucher](reference/screenshots/transactions/contra-voucher.png) | ![Payment party balance](reference/screenshots/transactions/payment-voucher-party-balance.png) |
+| Tariff Groups |
+| --- |
+| ![FleetTrack tariff groups](reference/screenshots/current/fleettrack-tariffs.png) |
 
-More reference captures live in [`reference/screenshots`](reference/screenshots).
+The current public-ready screenshots live in [`reference/screenshots/current`](reference/screenshots/current). Customer records and vehicle identifiers are intentionally redacted.
 
 ## Tech Stack
 
